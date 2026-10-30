@@ -1,0 +1,33 @@
+{
+  "name": "onlyplay",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Onlyplay Telegram bot, calendar, onboarding and Slack workers",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "npm run start:bot",
+    "start:bot": "node --input-type=module -e \"process.env.BOT_PROFILE='onlyplay'; import('./bot/index.js')\"",
+    "start:web": "node calendar-web/calendar-web.mjs",
+    "start:onboarding": "node calendar-web/onboarding-worker.mjs",
+    "start:reminders": "node calendar-web/reminder-worker.mjs",
+    "start:slack": "node slack/worker.mjs",
+    "test:bot": "node scripts/test-bot.mjs",
+    "test:slack": "node --test slack/test/*.test.js",
+    "test:web": "node --test calendar-web/test/*.test.mjs",
+    "test": "npm run test:bot && npm run test:web && npm run test:slack"
+  },
+  "dependencies": {
+    "@slack/socket-mode": "2.0.0",
+    "big-integer": "1.6.52",
+    "dotenv": "17.4.2",
+    "googleapis": "173.0.0",
+    "node-fetch": "3.3.2",
+    "openai": "6.47.0",
+    "telegraf": "4.16.3",
+    "telegraf-session-local": "2.1.1",
+    "teleproto": "1.232.0"
+  }
+}

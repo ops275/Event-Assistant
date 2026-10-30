@@ -1,0 +1,44 @@
+# Dependencies and generated files
+node_modules/
+coverage/
+playwright-report/
+test-results/
+*.log
+*.pid
+*.lock.tmp
+
+# All private configuration, credentials and runtime data
+.env
+.env.*
+*.env
+.runtime/
+*.pem
+*.key
+*.p12
+*.pfx
+*.session
+*.session-journal
+credentials*.json
+client_secret*.json
+client.json
+tokens.json
+sessions.json
+session.txt
+bot.lock
+data/
+.qa-data/
+*-private/
+private-backup/
+backups/
+
+# Local agent and workspace artifacts
+AGENTS.md
+CLAUDE.md
+.codex/
+.claude/
+.superpowers/
+.worktrees/
+work/
+artifacts/
+.DS_Store
+Thumbs.db

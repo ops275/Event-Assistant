@@ -1,0 +1,1 @@
+{"name":"onlyplay-slack","version":"1.0.0","private":true,"type":"module","scripts":{"test":"node --test","start":"node worker.mjs"},"dependencies":{"@slack/socket-mode":"^2.0.0"}}

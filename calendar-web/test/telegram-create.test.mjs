@@ -1,0 +1,11 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
+import {connectOnboarding} from '../services/onboardingTelegram.js';
+test('Telegram adapter retains confirmed creation title/date and invite identities; no secrets in identity',async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'telegram-adapter-'));let api;try{
+ const write=(name,source)=>{const p=path.join(dir,name);fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,source)};
+ write('package.json','{}');write('credentials.json',JSON.stringify({apiId:1,apiHash:'FAKE'}));write('test-group.json',JSON.stringify({accountId:'99'}));write('session.txt','FAKE');
+ write('node_modules/teleproto/index.js',`class CreateChannel{constructor(v){Object.assign(this,v)}} class InputChannel{} class InputPeerChannel{} class InviteToChannel{} class GetParticipant{}
+ exports.Api={InputChannel,InputPeerChannel,channels:{CreateChannel,InviteToChannel,GetParticipant}};
+ exports.TelegramClient=class{async connect(){} async disconnect(){} async checkAuthorization(){return true} async getMe(){return {id:99}} async getEntity(h){return h==='only_leadcapture_bot'?{bot:true,id:88,username:h}:{id:12345,firstName:'Good',lastName:'User'}} async getInputEntity(u){return u} async invoke(r){if(r instanceof CreateChannel)return {chats:[{megagroup:true,id:123,accessHash:'PRIVATE',title:r.title,date:1793278800}]};if(r instanceof GetParticipant)return {participant:{className:'ChannelParticipant'}};return {}}};`);
+ write('node_modules/teleproto/sessions.js','exports.StringSession=class{}');write('node_modules/teleproto/extensions/Logger.js','exports.Logger=class{}');write('node_modules/teleproto/client/uploads.js','exports.CustomFile=class{}');write('node_modules/big-integer/index.js','module.exports=v=>v');
+ api=await connectOnboarding({directory:dir,runtime:path.join(dir,'package.json'),botId:88});const group=await api.create('qooob × Company | Biz');assert.equal(group.title,'qooob × Company | Biz');assert.equal(group.createdAt,new Date(1793278800*1000).toISOString());assert.equal(group.id,'123');assert.deepEqual(await api.invite(group,'good_user'),{id:'12345',name:'Good User'});
+ }finally{await api?.disconnect();fs.rmSync(dir,{recursive:true,force:true})}});
