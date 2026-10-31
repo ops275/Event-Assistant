@@ -11,8 +11,8 @@ Only bot and web run in staging. No production Google/Sheets, Slack, Apollo, Ope
 ## Candidate
 
 1. Develop on a `codex/*` branch. Run `npm ci --ignore-scripts`, `node --test scripts/staging.test.mjs`, `npm test`; inspect diff and scan source/history for secrets.
-2. Commit the candidate and create an immutable archive using `git archive HEAD`. Record commit ID and SHA256. Transfer only source and media to a new `/srv/qooob-staging/releases/<commit>` directory. Install dependencies there; do not edit the active release.
-3. Re-run tests under a clean environment, including Node 22/Linux checks. Change staging `current` to the candidate only after checks pass; restart only the two staging units. Verify public health and getMe identity. Keep the previous symlink target for rollback.
+2. Commit the candidate and create an immutable archive using `git archive HEAD`. Record commit ID and SHA256. Transfer only source and media to a new `/srv/qooob-staging/releases/<commit>` directory. Build/install dependencies on a separate Linux builder, never with unrestricted npm on the shared production host. For an unchanged lockfile, an independent copy of the existing dependency tree is acceptable only after byte-for-byte lockfile comparison. Do not edit the active release.
+3. Re-run tests under a clean environment, including Node 22/Linux checks. Any server-side install/build/test must run in a transient systemd service with `MemoryMax=256M`, `MemorySwapMax=128M`, `CPUQuota=40%`; abort if limits cannot be applied or free host resources are insufficient. Change staging `current` to the candidate only after checks pass; restart only the two staging units. Verify public health and getMe identity. Keep the previous symlink target for rollback.
 4. Test the changed flows in the staging bot. Record which integrations are disabled and which live checks remain outstanding. Passing `/health` alone is not acceptance.
 
 ## Production promotion
