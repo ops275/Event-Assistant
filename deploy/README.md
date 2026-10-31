@@ -25,7 +25,7 @@ Promote only the exact staging-tested commit/archive; never rebuild from an unco
 4. Run appropriate checks, replace the intended application files, restart only affected qooob PM2 processes, then verify hashes, health and bot identity 8344814605. Roll back replaced application files if verification fails.
 5. Record release, checks, manual acceptance and rollback in Todoist qooob. Never equate user-requested task closure with a verified implementation.
 
-Automated GitHub CI runs checks only. No workflow automatically publishes to production. Promotion currently follows the above checked deployment procedure; a fully automatic production deploy pipeline is not implemented.
+The GitHub Actions pipeline is defined in `.github/workflows/check.yml`; activation requires the server receiver and environment-scoped deployment secrets described in `CICD.md`. Do not claim deployment automation is live until an actual staging run succeeds. Production additionally requires recorded staging flow acceptance and an exact tree match.
 
 ## Staging rollback / shutdown
 

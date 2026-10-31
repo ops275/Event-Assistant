@@ -1,16 +1,110 @@
 name: Check qooob
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 permissions:
   contents: read
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
+    name: Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: python3 -m unittest discover -s deploy -p 'test_*.py'
       - run: node --test scripts/staging.test.mjs
       - run: npm test
+  staging:
+    name: Deploy staging
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: staging
+      url: https://staging.qooob.81.27.103.54.sslip.io
+    concurrency:
+      group: qooob-deployment
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      # Test these exact installed bytes before packing; never install on the shared host.
+      - run: node --test scripts/staging.test.mjs && npm test
+      - run: python3 deploy/package.py "$RUNNER_TEMP/release.tar.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: staging-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/release.tar.gz
+            ${{ runner.temp }}/release.tar.gz.sha256
+            ${{ runner.temp }}/release.tar.gz.manifest.json
+          retention-days: 30
+          if-no-files-found: error
+      - name: Deploy immutable staging artifact
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_SSH_KEY" && test -n "$DEPLOY_KNOWN_HOSTS"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+          tree=$(git rev-parse 'HEAD^{tree}')
+          sha=$(cat "$RUNNER_TEMP/release.tar.gz.sha256")
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 root@81.27.103.54 "stage $GITHUB_SHA $tree $sha" < "$RUNNER_TEMP/release.tar.gz"
+      - name: Remove deploy key
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519
+  production:
+    name: Deploy production
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://qooob.81.27.103.54.sslip.io
+    concurrency:
+      group: qooob-deployment
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Promote previously accepted staging artifact
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_SSH_KEY" && test -n "$DEPLOY_KNOWN_HOSTS"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+          tree=$(git rev-parse 'HEAD^{tree}')
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 root@81.27.103.54 "promote $tree"
+      - name: Remove deploy key
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519
