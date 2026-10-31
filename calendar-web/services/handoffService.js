@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import {buildMeeting,BookingError,withCalendarLock} from './calendarBooking.js';
 import {calendarBusy,intervalBusy} from './handoffAvailability.js';
-import {calendarLeadDescription,leadPayload} from './leadLink.js';
+import {calendarLeadDescription,leadPayload,botUrl} from './leadLink.js';
 const code=error=>Number(error.code||error.response?.status)||0;
 const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const person=(id,settings,fallback)=>({id:String(id),name:String(settings.users?.[id]?.name||fallback||id)});
@@ -20,7 +20,7 @@ export function createHandoffService({journal,accounts,settings,clientFor,send,n
   const date=new Date(record.request.start.dateTime),timeZone=record.request.start.timeZone||record.calendar.timeZone||'UTC';
   const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(p=>[p.type,p.value]));
   const summary=record.request.summary,marker=summary.indexOf('qooob × '),label=marker>=0?summary.slice(marker+'qooob × '.length):summary;
-  const link='https://t.me/Leadgen_Ass1stant_bot?start='+leadPayload(record.leadId);
+  const link=botUrl()+'?start='+leadPayload(record.leadId);
   const meetingLabel=(record.meetingType==='online'?'Online':'Offline')+' meeting';
   let calendarLink=null;try{const u=new URL(record.event?.htmlLink);if(u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&u.href.length<=2048&&(u.hostname==='calendar.google.com'||['google.com','www.google.com'].includes(u.hostname)&&u.pathname.startsWith('/calendar/')))calendarLink=u.href;}catch{}
   const meeting=calendarLink?`<a href="${escape(calendarLink)}">${meetingLabel}</a>`:meetingLabel;

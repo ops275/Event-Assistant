@@ -1,3 +1,4 @@
+import {botUrl} from './leadLink.js';
 import crypto from 'node:crypto';import {google} from 'googleapis';import {issueBookingTicket,verifyBookingTicket,bookingDestination} from './bookingAccess.js';
 import {sameAppOrigin} from './requestOrigin.js';
 const esc=v=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
@@ -30,8 +31,8 @@ export function createCalendarConnect({accounts,credentials,admin,secret,googleO
    if(data.accessRole!=='owner')throw new Error('Google did not confirm the primary personal calendar.');
    accounts.connect(flow.userId,identity,tokens,{id:data.id,name:data.summary||identity.email,timeZone:data.timeZone||'UTC'});
    res.setHeader('Set-Cookie',`google_oauth_${state.slice(0,12)}=; HttpOnly; Secure; SameSite=Lax; Path=/google; Max-Age=0`);
-   res.writeHead(303,{Location:'https://t.me/Leadgen_Ass1stant_bot','Cache-Control':'no-store','Referrer-Policy':'no-referrer'});res.end();return true;
-  }catch(error){const own=/^(Google |Connect your corporate|Invalid OAuth|OAuth session|This Google|You |Access blocked|Invalid sign-in|Calendar is)/.test(error.message||'');reply(res,400,`<h2>Connection incomplete</h2><p>${esc(own?error.message:'Google did not confirm the connection. Open Settings and start again. If Workspace blocks the app, an administrator needs to allow it.')}</p><a href="https://t.me/Leadgen_Ass1stant_bot?start=calendar_connected">Return to bot</a>`);return true;}
+   res.writeHead(303,{Location:botUrl(),'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});res.end();return true;
+  }catch(error){const own=/^(Google |Connect your corporate|Invalid OAuth|OAuth session|This Google|You |Access blocked|Invalid sign-in|Calendar is)/.test(error.message||'');reply(res,400,`<h2>Connection incomplete</h2><p>${esc(own?error.message:'Google did not confirm the connection. Open Settings and start again. If Workspace blocks the app, an administrator needs to allow it.')}</p><a href="${botUrl()}?start=calendar_connected">Return to bot</a>`);return true;}
  }
  async function authenticatedRoute(req,res,url,identity,reply){
   if(!['/calendar','/calendar/disconnect','/calendar/status'].includes(url.pathname))return false;

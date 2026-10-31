@@ -2,8 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {stagingEnvironment, verifyStagingIdentity} from './staging-config.mjs';
 import {getConfig} from '../bot/config.js';
+import {calendarLeadDescription} from '../bot/services/leadLink.js';
 
 const token='9280625084:'+ 'x'.repeat(35);
+test('calendar lead links use staging bot identity',()=>{
+ const old=process.env.BOT_NAME;process.env.BOT_NAME='qooob_event_assistant_bot';
+ try{assert.match(calendarLeadDescription('Test','lead'),/t\.me\/qooob_event_assistant_bot\?start=/);}
+ finally{if(old===undefined)delete process.env.BOT_NAME;else process.env.BOT_NAME=old;}
+});
 test('staging rejects production token and unsupported workers',()=>{
  assert.throws(()=>stagingEnvironment({TELEGRAM_BOT_TOKEN:'8344814605:secret'},'bot'),/identity/);
  assert.throws(()=>stagingEnvironment({TELEGRAM_BOT_TOKEN:token},'slack'),/component/);
