@@ -25,6 +25,33 @@ jobs:
       - run: python3 -m unittest discover -s deploy -p 'test_*.py'
       - run: node --test scripts/staging.test.mjs
       - run: npm test
+  changes:
+    name: Detect production application changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      runtime: ${{ steps.diff.outputs.runtime }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Compare application source
+        id: diff
+        env:
+          BEFORE: ${{ github.event.before }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$BEFORE" == 0000000000000000000000000000000000000000 ]]; then
+            BEFORE=$(git hash-object -t tree /dev/null)
+          fi
+          if git diff --quiet "$BEFORE" "$GITHUB_SHA" -- bot calendar-web slack package.json package-lock.json; then
+            echo 'runtime=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'runtime=true' >> "$GITHUB_OUTPUT"
+          fi
   staging:
     name: Deploy staging
     needs: test
@@ -83,8 +110,8 @@ jobs:
         run: rm -f ~/.ssh/id_ed25519
   production:
     name: Deploy production
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test, changes]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.runtime == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
