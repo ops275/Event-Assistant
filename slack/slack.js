@@ -36,7 +36,7 @@ export function createSlackDelivery({api,teamId,appId,mode,channelId,ledger,save
   const meetingLabel=(record.meetingType==='online'?'Online':'Offline')+' meeting';
   let calendarLink=null;try{const u=new URL(record.event?.htmlLink);if(u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&u.href.length<=2048&&(u.hostname==='calendar.google.com'||['google.com','www.google.com'].includes(u.hostname)&&u.pathname.startsWith('/calendar/')))calendarLink=u.href;}catch{}
   const meeting=calendarLink?`<${esc(calendarLink)}|${meetingLabel}>`:meetingLabel;
-  const lines=[`Lead handed off to ${personLink(record.receiver)} from ${personLink(record.sender)}`,'',`Onlyplay × ${esc(lead.fields?.company)} — ${esc(lead.fields?.fullName)}`,'',`${meeting} · ${esc(time)}`];
+  const lines=[`Lead handed off to ${personLink(record.receiver)} from ${personLink(record.sender)}`,'',`qooob × ${esc(lead.fields?.company)} — ${esc(lead.fields?.fullName)}`,'',`${meeting} · ${esc(time)}`];
   if(detail)lines.push(leadCard(lead,record).text);
   return lines.join('\n').slice(0,28000);
  }

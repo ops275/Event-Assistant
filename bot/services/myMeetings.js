@@ -10,10 +10,10 @@ function safeCalendarLink(value){try{const url=new URL(value);return url.protoco
 function format(record,timeZone){
  const date=new Date(record.request.start.dateTime),zone=record.request.start.timeZone||record.calendar?.timeZone||timeZone;
  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(part=>[part.type,part.value]));
- const prefix='Onlyplay × ',summary=String(record.request.summary||''),label=summary.startsWith(prefix)?summary.slice(prefix.length):summary;
- const leadLink='https://t.me/only_leadcapture_bot?start='+leadPayload(record.leadId),meetingLabel=(record.meetingType==='online'?'Online':'Offline')+' meeting',calendarLink=safeCalendarLink(record.event?.htmlLink);
+ const prefix='qooob × ',summary=String(record.request.summary||''),label=summary.startsWith(prefix)?summary.slice(prefix.length):summary;
+ const leadLink='https://t.me/Leadgen_Ass1stant_bot?start='+leadPayload(record.leadId),meetingLabel=(record.meetingType==='online'?'Online':'Offline')+' meeting',calendarLink=safeCalendarLink(record.event?.htmlLink);
  const meeting=calendarLink?`<a href="${escape(calendarLink)}">${meetingLabel}</a>`:meetingLabel;
- return `Onlyplay × <a href="${leadLink}">${clip(label)}</a>\n${meeting} · ${parts.year}-${parts.month}-${parts.day} · ${parts.hour}:${parts.minute}`;
+ return `qooob × <a href="${leadLink}">${clip(label)}</a>\n${meeting} · ${parts.year}-${parts.month}-${parts.day} · ${parts.hour}:${parts.minute}`;
 }
 
 export const MEETING_PERIODS=Object.freeze({today:'Today',tomorrow:'Tomorrow',week:'This week'});

@@ -51,7 +51,7 @@ export async function runOnboarding(store,id,api,expectedAccount){
   }
  }
  job.status='working';store.save(job);const failures=[];
- async function step(key,operation){if(job.steps[key]||job.retryAt>Date.now())return;try{await operation();job.steps[key]=true;store.save(job);}catch(error){const reason=String(error.errorMessage||error.code||'');failures.push((key==='owner'?'ownership transfer':key)+(key==='owner'&&/^(ONBOARDING_[A-Z_]+|PASSWORD_[A-Z_]+(?:_\d+)?|SESSION_TOO_FRESH_\d+)$/.test(reason)?' ('+reason+')':''));cooldown(error);}}
+ async function step(key,operation){if(job.steps[key]||job.retryAt>Date.now())return;try{await operation();job.steps[key]=true;store.save(job);}catch(error){const reason=String(error.errorMessage||error.code||'');failures.push((key==='managerAdmin'?'manager admin permissions':key)+(key==='managerAdmin'&&/^(ONBOARDING_[A-Z_]+|PASSWORD_[A-Z_]+(?:_\d+)?|SESSION_TOO_FRESH_\d+)$/.test(reason)?' ('+reason+')':''));cooldown(error);}}
  await step('bot',()=>api.bot(job.group));
  await step('avatar',()=>api.avatar(job.group,job.type));
  await step('history',()=>api.history(job.group));
@@ -65,15 +65,14 @@ export async function runOnboarding(store,id,api,expectedAccount){
  for(const [index,message] of (job.introMessages||[]).entries()){
   job.steps.introMessages||=[];if(job.steps.introMessages[index])continue;
   if(job.retryAt>Date.now()){templatesComplete=false;break;}
-  try{if(message.type==='video')await api.video(job.group,message,message.randomId);else await api.template(job.group,message.html,message.randomId);job.steps.introMessages[index]=true;store.save(job);}
+  try{if(message.type==='video')await api.video(job.group,message,message.randomId);else if(message.type==='photo')await api.photo(job.group,message,message.randomId);else await api.template(job.group,message.html,message.randomId);job.steps.introMessages[index]=true;store.save(job);}
   catch(error){failures.push('template '+message.packName+' / '+message.name);cooldown(error);templatesComplete=false;break;}
  }
  }
  const setupComplete=['bot','avatar','history','link'].every(key=>job.steps[key])&&job.participants.every(handle=>job.steps.invited.includes(handle))&&(job.introMessages||[]).every((_,i)=>job.steps.introMessages?.[i]);
  if(setupComplete&&!failures.length){
-  await step('owner',async()=>{if(!/^\d+$/.test(String(job.managerId||''))||String(job.managerId)===String(api.accountId))throw Object.assign(new Error('Manager required'),{code:'ONBOARDING_MANAGER_REQUIRED'});await api.owner(job.group,String(job.managerId));});
-  if(job.steps.owner)await step('leave',()=>api.leave(job.group,String(job.managerId)));
+  await step('managerAdmin',async()=>{if(!/^\d+$/.test(String(job.managerId||''))||String(job.managerId)===String(api.accountId))throw Object.assign(new Error('Manager required'),{code:'ONBOARDING_MANAGER_REQUIRED'});await api.managerAdmin(job.group,String(job.managerId));});
  }
- if(!failures.length&&(!setupComplete||!job.steps.owner||!job.steps.leave))failures.push('setup pending');
+ if(!failures.length&&(!setupComplete||!job.steps.managerAdmin))failures.push('setup pending');
  job.status=failures.length?'partial':'ready';job.error=failures.length?'Incomplete steps: '+failures.join(', ')+'. Privacy settings or Telegram restrictions may prevent invitations; share the link manually.':null;job.updatedAt=new Date().toISOString();store.save(job);
 }

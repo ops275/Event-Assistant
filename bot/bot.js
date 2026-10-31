@@ -1,3 +1,4 @@
+import {visibleManager} from './services/managerVisibility.js';
 import {formatPanelHeading} from './services/panelHeading.js';
 import {createApolloService,apolloNotice} from './services/apolloService.js';
 import {readSearchQuery} from './services/searchQuery.js';
@@ -79,7 +80,7 @@ export function createBot({ token, store, config, analyzer, apollo=createApolloS
         delete session.pendingChannel;delete session.leadgenDraftId;delete session.meetingCreation;session.editField=null;session.view='leadgen-channel';
     },getManagers:ctx=>{
         if(!config.calendarAccountsDir)return [];
-        return new CalendarAccounts(config.calendarAccountsDir).managers(ctx.from.id,admin.read()).filter(a=>['admin','partnership'].includes(admin.read().users[a.userId]?.role)).map(a=>({...a,displayName:admin.read().users[a.userId]?.name||store.state.users?.[a.userId]?.name||a.calendar.name||a.email}));
+        return new CalendarAccounts(config.calendarAccountsDir).managers(ctx.from.id,admin.read()).filter(visibleManager).filter(a=>['admin','partnership'].includes(admin.read().users[a.userId]?.role)).map(a=>({...a,displayName:admin.read().users[a.userId]?.name||store.state.users?.[a.userId]?.name||a.calendar.name||a.email}));
     }});
     const effectiveRole=id=>admin.role(id)||resolveRole(store.state,id);
     const activeConflicts=lead=>captureProjection(lead,config).conflicts;
@@ -323,7 +324,7 @@ export function createBot({ token, store, config, analyzer, apollo=createApolloS
     async function openBooking(ctx,leadId) {
         const button=bookingButton(ctx,leadId,'Open Hand off lead');
         if(!button)return ctx.reply('Hand off lead is not connected yet or is unavailable for your role.');
-        return replyHeading(ctx,'Hand off lead · Onlyplay\n\nOpen the miniapp inside Telegram.',bookingReplyButtons(ctx,button,leadId?'review':'bookingmenu'));
+        return replyHeading(ctx,'Hand off lead · qooob\n\nOpen the miniapp inside Telegram.',bookingReplyButtons(ctx,button,leadId?'review':'bookingmenu'));
     }
 
     function hasPersonalCalendar(id){
@@ -412,7 +413,7 @@ export function createBot({ token, store, config, analyzer, apollo=createApolloS
     bot.use(async (ctx, next) => {
         if (!ctx.from || !ctx.chat) return;
         if (ctx.chat.type !== 'private') return;
-        if(admin.blocked(ctx.from.id))return ctx.reply('Access to Onlyplay has been blocked by an administrator.');
+        if(admin.blocked(ctx.from.id))return ctx.reply('Access to qooob has been blocked by an administrator.');
         if(config.profile==='onlyplay'&&startLeadPayload(ctx.message?.text)){
             const id=String(ctx.from.id),admitted=admin.managed(id)||store.isAuthorized(id)||config.allowedUsers.includes(id);
             if(!admitted||config.allowedUsers.length&&!config.allowedUsers.includes(id)&&!admin.managed(id))return ctx.reply('autorizhation needed');
@@ -594,6 +595,7 @@ export function createBot({ token, store, config, analyzer, apollo=createApolloS
     });
 
     function materialsFor(ctx){return createMaterials({persist:()=>store.save(),checkAsset:id=>fs.accessSync(fileURLToPath(videoAsset(id).file),fs.constants.R_OK),send:item=>{
+        if(item.type==='photo')return ctx.telegram.sendPhoto(ctx.chat.id,{source:followupPhotoPath(item.filename)},{caption:item.html,parse_mode:'HTML'});
         if(item.type!=='video')return ctx.telegram.sendMessage(ctx.chat.id,item.html,{parse_mode:'HTML',link_preview_options:{is_disabled:true}});
         const asset=videoAsset(item.assetId);
         return sendCachedVideo({store,telegram:ctx.telegram,botId:ctx.botInfo?.id||bot.botInfo?.id,chatId:ctx.chat.id,assetId:item.assetId,asset,extra:{caption:item.html,parse_mode:'HTML',supports_streaming:true,duration:Math.floor(asset.duration),width:asset.width,height:asset.height}});
@@ -699,12 +701,12 @@ export function createBot({ token, store, config, analyzer, apollo=createApolloS
             if(account?.version!==session.disconnectCalendarVersion){session.view='settings';session.disconnectCalendarVersion=null;throw new UserError('The connection changed. Open Settings and confirm disconnection again.');}
             const value=accounts.load(ctx.from.id);accounts.remove(ctx.from.id);session.disconnectCalendarVersion=null;session.view='settings';
             let revoked=true;try{if(value?.tokens.refresh_token)await revokeCalendarToken(value.tokens.refresh_token);}catch{revoked=false;}
-            await ctx.reply('Calendar disconnected in Onlyplay. Existing meetings are preserved.'+(revoked?'':' Google did not confirm access revocation; remove access in your Google account settings if needed.'));return show(ctx);
+            await ctx.reply('Calendar disconnected in qooob. Existing meetings are preserved.'+(revoked?'':' Google did not confirm access revocation; remove access in your Google account settings if needed.'));return show(ctx);
         }
         if(action==='calendarconnect'){session.view='settings';session.editField=null;return show(ctx);}
         const promoterBlocked=config.profile==='onlyplay'?action==='apollo':action.startsWith('meeting')|| (config.sharedLeads?['bookweb','leadmeeting','apollo','export','delete','confirmdelete'].includes(action):action.startsWith('search')||['bookweb','leadmeeting','list','open','apollo','scope','period','export','full','delete','confirmdelete'].includes(action));
         if(config.profile!=='onlyplay'&&effectiveRole(ctx.from.id)==='promoter'&&(promoterBlocked||(action==='menu'&&!(config.sharedLeads?['add-lead','settings','search-lead']:['add-lead','settings']).includes(value))||(action==='createflow'&&value!=='promoter'))){await ctx.reply('Promoter role: lead capture and personal settings are available'+(config.sharedLeads?' and shared lead browsing.':'.'));session.view='welcome';return show(ctx);}
-        if(action==='admintest'){await replyHeading(ctx,'Onlyplay test reminder\n\nAn upcoming meeting reminder includes the lead name, company, time, location and Meet link. Delivery to your private chat works.');session.view='settings';return show(ctx);}
+        if(action==='admintest'){await replyHeading(ctx,'qooob test reminder\n\nAn upcoming meeting reminder includes the lead name, company, time, location and Meet link. Delivery to your private chat works.');session.view='settings';return show(ctx);}
         try{if(adminPanel.action(action,value,session,String(ctx.from.id)))return show(ctx);}catch(error){await ctx.reply(error.message);session.view='settings';return show(ctx);}
         if (action === 'addflow' || action === 'new') {
             session.editField = null;

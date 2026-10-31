@@ -1,3 +1,4 @@
+import {visibleManager} from './managerVisibility.js';
 import fs from 'node:fs';
 import {ROLES} from './adminService.js';
 import {createEventSettings} from './eventSettings.js';
@@ -17,7 +18,7 @@ export function createAdminPanel({admin,store,config}){
    text+='\nGoogle Calendar: '+(calendar?calendar.email:'not connected');
    add(calendar?'Reconnect Google Calendar':'Connect Google Calendar','calendarconnect');
    if(calendar)add('Disconnect calendar','calendardisconnect');
-   if(admin.isAdmin(id)){text+='\n\nOnlyplay administration';add('📅 Event management','eventhome');add('Users and roles','adminusers:0');add('Meetings and delivery history','adminmeetings');}
+   if(admin.isAdmin(id)){text+='\n\nqooob administration';add('📅 Event management','eventhome');add('Users and roles','adminusers:0');add('Meetings and delivery history','adminmeetings');}
    add('Menu','welcome');return {text,rows};
   }
   if(session.view==='settings-calendar-disconnect'){
@@ -27,11 +28,11 @@ export function createAdminPanel({admin,store,config}){
   if(!admin.isAdmin(id)){session.view='settings';return panel(session,id);}
   if(session.view==='settings-users'){
    const ids=[...new Set([...Object.keys(store.state.users||{}),...Object.keys(settings.users),...admin.bootstrap,...store.state.authorizedUsers,...Object.keys(store.state.sessions).map(k=>k.split(':').at(-1))])].filter(x=>/^\d+$/.test(x));
-   const page=Math.max(0,session.adminPage||0);text='Users and roles\n\nChoose a team member. New users need to open Onlyplay and send /start.';
+   const page=Math.max(0,session.adminPage||0);text='Users and roles\n\nChoose a team member. New users need to open qooob and send /start.';
    for(const uid of ids.slice(page*8,page*8+8))add(`${name(uid)} · ${settings.users[uid]?.blocked?'blocked':ROLES[admin.role(uid)]||'no role'}`,`adminuser:${uid}`);
    if(page)add('← Back','adminusers:'+(page-1));if(ids.length>(page+1)*8)add('Next →','adminusers:'+(page+1));add('Add by Telegram ID','adminadd');
   }else if(session.view==='settings-user'){
-   const uid=session.adminTarget;text=`${name(uid)}\nTelegram ID: ${uid}\nRole: ${ROLES[admin.role(uid)]||'unassigned'}\nAccess: ${admin.blocked(uid)?'blocked':'allowed'}\n\nAll authorized Onlyplay users have equal lead access. Administrators also manage users and assignments.`;
+   const uid=session.adminTarget;text=`${name(uid)}\nTelegram ID: ${uid}\nRole: ${ROLES[admin.role(uid)]||'unassigned'}\nAccess: ${admin.blocked(uid)?'blocked':'allowed'}\n\nAll authorized qooob users have equal lead access. Administrators also manage users and assignments.`;
    for(const [role,title] of Object.entries(ROLES))add(title,`adminrole:${role}`);
    add(admin.blocked(uid)?'Unblock':'Block','adminblock');add('Back to users','adminusers:0');
   }else if(session.view==='settings-add'){text='Add user\n\nSend a numeric Telegram user ID. Choose the role next. Use a personal account ID, not a group chat ID.';}
@@ -41,7 +42,7 @@ export function createAdminPanel({admin,store,config}){
    if(!items.length)text+='\n\nNo leads yet.';if(page)add('← Back','adminleads:'+(page-1));if(items.length>(page+1)*8)add('Next →','adminleads:'+(page+1));
   }else if(session.view==='settings-assignment'){
    const lead=store.state.leads[session.adminLead];text=`Manager for ${lead?.fields?.fullName||'lead'}\n\nCurrent: ${lead?.assigneeId?name(lead.assigneeId):'unassigned'}.\nChoose a team member with the manager or administrator role.`;
-   const ids=Object.keys(settings.users).filter(uid=>!admin.blocked(uid)&&['admin','partnership'].includes(admin.role(uid))),page=session.adminManagerPage||0;
+   const ids=Object.keys(settings.users).filter(uid=>visibleManager({id:uid})&&!admin.blocked(uid)&&['admin','partnership'].includes(admin.role(uid))),page=session.adminManagerPage||0;
    for(const uid of ids.slice(page*8,page*8+8))add(`${name(uid)} (${uid})`,`adminassign:${uid}`);
    if(page)add('← Back','adminmanagers:'+(page-1));if(ids.length>(page+1)*8)add('Next →','adminmanagers:'+(page+1));add('Remove assignment','adminassign:none');add('Back to leads','adminleads:0');
   }else if(session.view==='settings-reminders'){
@@ -51,7 +52,7 @@ export function createAdminPanel({admin,store,config}){
    const data=ledger(),upcoming=(data.upcoming||[]).filter(e=>Date.parse(e.start)>Date.now()).slice(0,8);text='Upcoming meetings (7 days)\n\n'+(upcoming.map(e=>`${e.start} · ${String(e.summary).slice(0,90)}`).join('\n')||'No scheduled meetings.');
    text+='\n\nRecent deliveries:\n'+(Object.values(data.deliveries||{}).sort((a,b)=>b.at-a.at).slice(0,8).map(d=>`${new Date(d.at).toISOString()} · ${d.recipient} · ${{sent:'sent',blocked:'Telegram blocked delivery',retry:'waiting for retry',uncertain:'delivery unconfirmed',sending:'sending'}[d.status]||d.status}`).join('\n')||'No deliveries yet.');add('Refresh','adminmeetings');
   }else if(session.view==='settings-status'){
-   const data=ledger(),all=leads();text=`Onlyplay status\n\nLeads: ${all.length}\nSaved: ${all.filter(l=>l.status==='saved').length}\nSheets errors: ${all.filter(l=>l.sheetsSync?.status==='failed').length}\nReminders: ${settings.remindersEnabled?'enabled':'disabled'}\nCalendar check: ${data.checkedAt?new Date(data.checkedAt).toISOString():'service has not started yet'}\nService: ${data.error?'error '+data.error:!data.checkedAt||Date.now()-data.checkedAt>120000?'no recent confirmation':'running'}\nGoogle: ${data.checkedAt&&!data.error?'calendar read confirmed':'check required'}\n\nRecent changes:\n${(settings.audit||[]).slice(-5).reverse().map(a=>`${a.at} · ${a.actor} → ${a.target||'reminders'}`).join('\n')||'No changes'}`;add('Refresh','adminstatus');
+   const data=ledger(),all=leads();text=`qooob status\n\nLeads: ${all.length}\nSaved: ${all.filter(l=>l.status==='saved').length}\nSheets errors: ${all.filter(l=>l.sheetsSync?.status==='failed').length}\nReminders: ${settings.remindersEnabled?'enabled':'disabled'}\nCalendar check: ${data.checkedAt?new Date(data.checkedAt).toISOString():'service has not started yet'}\nService: ${data.error?'error '+data.error:!data.checkedAt||Date.now()-data.checkedAt>120000?'no recent confirmation':'running'}\nGoogle: ${data.checkedAt&&!data.error?'calendar read confirmed':'check required'}\n\nRecent changes:\n${(settings.audit||[]).slice(-5).reverse().map(a=>`${a.at} · ${a.actor} → ${a.target||'reminders'}`).join('\n')||'No changes'}`;add('Refresh','adminstatus');
   }
   add('Settings','adminhome');return {text,rows};
  }

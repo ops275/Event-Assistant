@@ -3,7 +3,9 @@ import {AdminSettings,atomicJson} from './services/adminService.js';import {remi
 import {BookingLinks,publicReminderLead} from './services/bookingLinks.js';
 import {manualReminderLead} from './services/manualMeeting.js';
 dotenv.config({path:process.env.CALENDAR_BOT_ENV||'/root/event-bot/.env.onlyplay',quiet:true});
-if(process.env.BOT_PROFILE!=='onlyplay')throw new Error('Onlyplay profile required');
+if(process.env.BOT_PROFILE!=='onlyplay')throw new Error('qooob profile required');
+const reminderNotBefore=process.env.REMINDER_NOT_BEFORE?Date.parse(process.env.REMINDER_NOT_BEFORE):null;
+if(reminderNotBefore!==null&&!Number.isFinite(reminderNotBefore))throw new Error('Invalid reminder notification cutover');
 const privateDir=process.env.CALENDAR_PRIVATE_DIR||'/root/event-bot/calendar-private';
 const ledgerFile=process.env.REMINDER_LEDGER_FILE,settingsFile=process.env.ADMIN_SETTINGS_FILE;
 if(!ledgerFile||!settingsFile||!process.env.TELEGRAM_BOT_TOKEN)throw new Error('Reminder configuration incomplete');
@@ -34,18 +36,18 @@ async function send(recipient,text,event){
  const result=await response.json();if(!response.ok||!result.ok)throw Object.assign(new Error('Telegram delivery failed'),{code:result.error_code||response.status,retryAfter:result.parameters?.retry_after});return result.result;
 }
 let stopped=false;const stop=new AbortController();for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{stopped=true;stop.abort();});
-console.log('Onlyplay reminder worker started');
+console.log('qooob reminder worker started');
 do{
  try{
   const now=Date.now(),events=[],failures=[];contexts.clear();
-  const sources=[{api,target}];
+  const sources=process.env.CALENDAR_LEGACY_ENABLED==='false'?[]:[{api,target}];
   for(const account of accounts.all()){
    if(admin.blocked(account.userId)||admin.read().users[account.userId]?.role==='promoter')continue;
    const value=accounts.load(account.userId),ownAuth=new google.auth.OAuth2(client.client_id,client.client_secret);ownAuth.setCredentials(value.tokens);ownAuth.on('tokens',tokens=>accounts.refresh(account.userId,value.version,tokens));
    const context={api:google.calendar({version:'v3',auth:ownAuth}),target:account.calendar,owner:account.userId,version:account.version};contexts.set(account.userId,context);sources.push(context);
   }
   for(const source of sources){let pageToken;try{
-   do{const {data}=await source.api.events.list({calendarId:source.target.id,timeMin:new Date(now).toISOString(),timeMax:new Date(now+7*86400000).toISOString(),singleEvents:true,showDeleted:false,orderBy:'startTime',maxResults:250,privateExtendedProperty:'source=onlyplay-local-test',pageToken},{timeout:15000});events.push(...(data.items||[]).map(event=>({...event,...(source.owner?{_calendarOwner:source.owner}:{})})));pageToken=data.nextPageToken;}while(pageToken&&!stopped);
+   do{const {data}=await source.api.events.list({calendarId:source.target.id,timeMin:new Date(now).toISOString(),timeMax:new Date(now+7*86400000).toISOString(),singleEvents:true,showDeleted:false,orderBy:'startTime',maxResults:250,privateExtendedProperty:'source=onlyplay-local-test',pageToken},{timeout:15000});events.push(...(data.items||[]).filter(event=>reminderNotBefore===null||Number.isFinite(Date.parse(event.created))&&Date.parse(event.created)>=reminderNotBefore).map(event=>({...event,...(source.owner?{_calendarOwner:source.owner}:{})})));pageToken=data.nextPageToken;}while(pageToken&&!stopped);
   }catch{failures.push(source.owner||'legacy');}}
   const state=JSON.parse(fs.readFileSync(process.env.CALENDAR_LEADS_FILE||'/root/event-bot/data/onlyplay/state.json','utf8'));
   for(const event of events){const lead=publicLead(event,event._calendarOwner);if(lead)state.leads[lead.id]=lead;}

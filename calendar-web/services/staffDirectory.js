@@ -1,7 +1,8 @@
+import {visibleManager} from './managerVisibility.js';
 import {PARTNERSHIP_MANAGERS} from './partnershipManagers.js';
 const esc=v=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 export function managerOptions(accounts,selected){
- const remaining=[...accounts],options=PARTNERSHIP_MANAGERS.map(person=>{const index=remaining.findIndex(a=>String(a.email).toLowerCase()===person.email);const account=index<0?null:remaining.splice(index,1)[0];return {person,account};});
+ const remaining=accounts.filter(visibleManager),options=PARTNERSHIP_MANAGERS.map(person=>{const index=remaining.findIndex(a=>String(a.email).toLowerCase()===person.email);const account=index<0?null:remaining.splice(index,1)[0];return {person,account};});
  return options.map(({person,account})=>account?`<option value="${esc(account.userId)}" data-zone="${esc(account.calendar.timeZone)}" data-calendar="${esc(account.email)}" ${account.userId===selected?'selected':''}>${esc(person.name)} · ${esc(person.email)}</option>`:`<option value="" disabled>${esc(person.name)} · ${esc(person.email)}</option>`).join('')+remaining.map(a=>`<option value="${esc(a.userId)}" data-zone="${esc(a.calendar.timeZone)}" data-calendar="${esc(a.email)}" ${a.userId===selected?'selected':''}>${esc(a.displayName||a.email)}</option>`).join('');
 }
 export function directorySuggestions(mode,people=PARTNERSHIP_MANAGERS){

@@ -14,7 +14,9 @@ I’ll share a guide to walk you through the integration and onboarding process 
 4. <b>Compliance</b>: main registration country (entity) + licenses + available settlement methods + any restricted markets`}
  ]},
  {id:'introduce-marketplace',category:'provider',name:'Introduce Marketplace',messages:[
-  {type:'video',assetId:'igames-marketplace',name:'Product update and materials',html:`Before you start answering questions, I want you to watch an important <i>product update</i>.
+  {type:'video',assetId:'igames-marketplace',name:'Igames Marketplace.mp4',html:''},
+  {type:'video',assetId:'qooob-economy-providers',name:'2.2 qooob economy ( providers ).mp4',html:''},
+  {name:'Product update and materials',html:`Before you start answering questions, I want you to watch an important <i>product update</i>.
 
 You may already know about qooob's transparent model, but we’ve recently launched the <b><i>game catalog</i></b> in beta, bringing us one step closer to the next stage of qooob — the <b>iGames Marketplace.</b>
 
@@ -28,11 +30,10 @@ I’m also sharing:
 - Marketplace Onboarding <b><a href="https://drive.google.com/file/d/15mP_pfgsmVYrPZVjN1wDGFwHK-GQEL6F/view?usp=sharing">Requirements</a></b>.
 
 If helpful, we can also jump on a short call to walk you through the model and show you the beta version of the catalog.`},
-  {type:'video',assetId:'qooob-economy-providers',name:'Share with stakeholders',html:`I recommend forwarding the previous message to your <b>Legal</b>, <b>Compliance</b>, and <b>Tech stakeholders</b> to align our operational standards so we can onboard you into the marketplace environment as well.`},
-  {name:'Call or clarification',html:`Guys, do you want to jump on a call to discuss the difference between the approaches, or is everything clear for now?`}
+  {type:'photo',filename:'follow-up-open-distribution-vs-black-box.png',name:'Call or clarification',html:`Guys, do you want to jump on a call to discuss the difference between the approaches, or is everything clear for now?`}
  ]},
  {id:'kick-off-contracting',category:'provider',name:'Kick off Contracting',messages:[
-  {name:'Contracting',html:`Dear colleagues,
+  {type:'photo',filename:'follow-up-marketplace-cover.png',name:'Contracting',html:`Dear colleagues,
 
 Before starting contracting, we’re sharing our <b>contract templates</b> (by email), which already incorporate the commercial, technical, and legal standards of the upcoming industry’s first <b>iGames Marketplace</b>, where providers distribute content directly and operators negotiate rates without middlemen, while the traditional convenience of single-API aggregation remains.
 

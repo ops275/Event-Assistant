@@ -28,3 +28,17 @@ export async function leaveOnboardingGroup({client,Api,channel,managerId}){
  if(result.participant?.className!=='ChannelParticipantCreator')throw Object.assign(new Error('Ownership changed'),{code:'ONBOARDING_OWNERSHIP_UNCONFIRMED'});
  try{await client.invoke(new Api.channels.LeaveChannel({channel}));}catch(error){if(!absent(error))throw error;}
 }
+
+
+// Grant the permission needed for manual invitations; Amanda retains ownership.
+export async function promoteOnboardingManager({client,Api,channel,managerId}){
+ const users=await client.getParticipants(channel);
+ const user=users.find(user=>String(user.id)===String(managerId));
+ if(!user||user.bot||user.deleted)throw Object.assign(new Error('Manager must join first'),{code:'ONBOARDING_MANAGER_NOT_IN_GROUP'});
+ const input=await client.getInputEntity(user);
+ const participant=async()=>{const result=await client.invoke(new Api.channels.GetParticipant({channel,participant:input}));return result.participant;};
+ const hasPermission=value=>value?.className==='ChannelParticipantCreator'||value?.className==='ChannelParticipantAdmin'&&value.adminRights?.inviteUsers===true;
+ const current=await participant();if(hasPermission(current))return;
+ await client.invoke(new Api.channels.EditAdmin({channel,userId:input,rank:'',adminRights:new Api.ChatAdminRights({...current?.adminRights,inviteUsers:true})}));
+ if(!hasPermission(await participant()))throw Object.assign(new Error('Manager admin permissions unconfirmed'),{code:'ONBOARDING_ADMIN_UNCONFIRMED'});
+}

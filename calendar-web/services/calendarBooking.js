@@ -23,7 +23,7 @@ export function buildMeeting(input,lead,target,now=new Date(),{legacyLocationCop
  if(input.createMeet&&input.inbox)throw new BookingError('Agree on the time before choosing Online.');
  const customDescription=String(input.description||'').trim();
  if(customDescription.length>3000)throw new BookingError('Description must be at most 3000 characters.');
- if(!lead?.fields?.fullName?.trim()||!lead.fields.company?.trim())throw new BookingError('Fill in the lead name and company first.');
+ if(!lead?.fields?.fullName?.trim())throw new BookingError('Fill in the lead name first.');
  if(input.createMeet&&input.inbox)throw new BookingError('Agree on the meeting time before choosing Google Meet.');
  const location=input.createMeet?'Google Meet':input.inbox?'The meeting place should be added after clarifying the time':input.location?.trim();
  if(!location||location.length>300)throw new BookingError('Specify a meeting place (up to 300 characters).');
@@ -39,8 +39,9 @@ export function buildMeeting(input,lead,target,now=new Date(),{legacyLocationCop
  const contactEmails=leadContactEmails(contact);
  const guests=[...new Set([...(Object.hasOwn(input,'leadContact')||!Array.isArray(input.guests)?contactEmails:[]),...(Array.isArray(input.guests)?input.guests:[])].map(x=>String(x).trim().toLowerCase()).filter(Boolean))];
  if(guests.length>20||guests.some(x=>!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(x)))throw new BookingError('Check guest email addresses (at most 20).');
- const summary=`Onlyplay × ${lead.fields.company.trim()} — ${lead.fields.fullName.trim()}`;
- const description=[`Onlyplay meeting with ${lead.fields.company.trim()}.`,`Participant: ${lead.fields.fullName.trim()}.`,'Duration: 30 minutes.',`${legacyLocationCopy?'Location':'Place'}: ${location}.`,input.inbox?'Meeting time is NOT agreed. 07:00 is an internal Inbox time, not the meeting time.':'Meeting time is agreed.'].join('\n');
+ const company=String(lead.fields.company||'').trim();
+ const summary='qooob × '+[company,lead.fields.fullName.trim()].filter(Boolean).join(' — ');
+ const description=[`qooob meeting with ${company||lead.fields.fullName.trim()}.`,`Participant: ${lead.fields.fullName.trim()}.`,'Duration: 30 minutes.',`${legacyLocationCopy?'Location':'Place'}: ${location}.`,input.inbox?'Meeting time is NOT agreed. 07:00 is an internal Inbox time, not the meeting time.':'Meeting time is agreed.'].join('\n');
  return {
   id:'ea'+createHash('sha256').update(input.submission).digest('hex'),
   summary:(input.inbox?'[Clarify time] ':'')+summary,description:[description,...(contact&&!contactEmails.length?['Lead contact: '+contact]:[]),customDescription].filter(Boolean).join('\n\n'),

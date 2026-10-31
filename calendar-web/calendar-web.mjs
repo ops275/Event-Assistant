@@ -1,3 +1,4 @@
+import {visibleManager} from './services/managerVisibility.js';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -55,7 +56,7 @@ const canWrite=()=>String(oauth.credentials.scope||'').split(' ').some(scope=>sc
 const leadStateFile=process.env.CALENDAR_LEADS_FILE||path.join(privateDir,'onlyplay-state.json');
 const handoffJournal=new HandoffJournal(leadStateFile);
 const dashboardRoutes=createDashboardRoutes({admin,state:()=>JSON.parse(fs.readFileSync(leadStateFile,'utf8')),handoffs:()=>handoffJournal.records(),onboarding:()=>onboardingJobs.all()});
-const leads=owner=>Object.values(readHandoffState(leadStateFile,handoffJournal).leads||{}).filter(lead=>!lead.deletedAt&&lead.fields?.fullName&&lead.fields?.company);
+const leads=owner=>Object.values(readHandoffState(leadStateFile,handoffJournal).leads||{}).filter(lead=>!lead.deletedAt&&lead.fields?.fullName?.trim());
 const handoffService=createHandoffService({journal:handoffJournal,accounts,settings:()=>admin.read(),nameFor:id=>readHandoffState(leadStateFile,handoffJournal).users?.[id]?.name||'',userFor:id=>readHandoffState(leadStateFile,handoffJournal).users?.[id],roleFor:id=>readHandoffState(leadStateFile,handoffJournal).userRoles?.[id],clientFor:id=>personal.clientFor(id),send:async(recipient,text,options={})=>{
  const response=await fetch('https://api.telegram.org/bot'+process.env.TELEGRAM_BOT_TOKEN+'/sendMessage',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:recipient,text,...(options.parse_mode?{parse_mode:options.parse_mode}:{}),link_preview_options:{is_disabled:true}}),signal:AbortSignal.timeout(15000)});
  const result=await response.json();if(!response.ok||!result.ok)throw Object.assign(new Error('Telegram delivery failed'),{code:result.error_code||response.status,retryAfter:result.parameters?.retry_after});return result.result;
@@ -67,7 +68,7 @@ setInterval(recoverHandoffs,30000).unref();recoverHandoffs();
 oauth.on('tokens',tokens=>{const saved={...oauth.credentials,...tokens};fs.writeFileSync(tokenFile,JSON.stringify(saved,null,2),{mode:0o600});});
 
 const escape=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
-const page=body=>`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Onlyplay — Hand off lead</title><script src="https://telegram.org/js/telegram-web-app.js"></script><script src="/miniapp-ui.js" defer></script><style>${bookingStyles}</style></head><body><header><span class="brand-mark">E</span>Event Assistant<small>Onlyplay</small></header><main>${body}</main></body></html>`;
+const page=body=>`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>qooob — Hand off lead</title><script src="https://telegram.org/js/telegram-web-app.js"></script><script src="/miniapp-ui.js" defer></script><style>${bookingStyles}</style></head><body><header><span class="brand-mark">E</span>Event Assistant<small>qooob</small></header><main>${body}</main></body></html>`;
 function reply(res,status,body){res.writeHead(status,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':res.getHeader('Referrer-Policy')||'same-origin','Content-Security-Policy':"default-src 'none'; script-src 'self' https://telegram.org; connect-src 'self'; img-src 'self'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors https://web.telegram.org https://*.telegram.org"});res.end(page(body));}
 function cookie(req){return (req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('calendar_session='))?.slice(17);}
 const server=http.createServer(async(req,res)=>{
@@ -105,7 +106,7 @@ const server=http.createServer(async(req,res)=>{
     return res.end(JSON.stringify({next:nextPage(ticket)}));
    }
    identity=webSessions.get(sessionCookie(req));
-   if(!identity||identity.expires<Date.now())return reply(res,403,'Open this form using Hand off lead in Onlyplay. Direct URL access is disabled.');
+   if(!identity||identity.expires<Date.now())return reply(res,403,'Open this form using Hand off lead in qooob. Direct URL access is disabled.');
    if(admin.blocked(identity.userId)||admin.role(identity.userId)==='promoter')return reply(res,403,'Your role or access was changed by an administrator. Booking is unavailable.');
    if(await dashboardRoutes.route(req,res,url,identity,reply,[publicBase()?.origin,googleOrigin()]))return;
    if(await personal.authenticatedRoute(req,res,url,identity,reply))return;
@@ -149,12 +150,12 @@ const server=http.createServer(async(req,res)=>{
    const leadId=rememberBookingLead(identity,url.searchParams);
    if(!leadId)return reply(res,400,'A lead is required to create a handoff. Return to the bot and add a lead or choose one from CRM.');
    const options=leads(identity?.owner); const selected=options.find(lead=>lead.id===leadId);
-   if(leadId&&!options.some(lead=>lead.id===leadId))return reply(res,400,'This lead was deleted or is missing its name or company. Return to the bot, check the card and open Hand off lead again.');
+   if(leadId&&!options.some(lead=>lead.id===leadId))return reply(res,400,'This lead was deleted or is missing its name. Return to the bot, check the card and open Hand off lead again.');
    const sessionId=crypto.randomBytes(24).toString('hex');
    const csrf=crypto.randomBytes(24).toString('hex');
    sessions.set(sessionId,{csrf,type:'booking',owner:identity?.owner,submission:crypto.randomBytes(24).toString('hex'),expires:Date.now()+60*60*1000});
    res.setHeader('Set-Cookie',`calendar_session=${sessionId}; HttpOnly; ${publicMode?'SameSite=None; Secure; Partitioned; ':'SameSite=Lax; '}Path=/; Max-Age=3600`);
-   const settings=admin.read(),managers=accounts.managers(identity?.userId,settings).filter(account=>['admin','partnership'].includes(settings.users[account.userId]?.role));
+   const settings=admin.read(),managers=accounts.managers(identity?.userId,settings).filter(visibleManager).filter(account=>['admin','partnership'].includes(settings.users[account.userId]?.role));
    const preferred=identity?.managerId||url.searchParams.get('manager')||selected?.assigneeId||String(identity?.userId||'');
    const manager=managers.find(a=>a.userId===preferred);
    if(!manager)return reply(res,400,'The manager calendar is unavailable. Return to the bot and choose a Partnership Manager again.');
@@ -181,4 +182,4 @@ const server=http.createServer(async(req,res)=>{
   reply(res,502,`Check failed. HTTP ${Number(error.response?.status||error.status)||'unknown'}. Workspace or Calendar API restrictions may apply. <a href="/">Retry</a>`);
  }
 });
-server.listen(port,'127.0.0.1',()=>console.log('Onlyplay calendar web ready on loopback port '+port));
+server.listen(port,'127.0.0.1',()=>console.log('qooob calendar web ready on loopback port '+port));

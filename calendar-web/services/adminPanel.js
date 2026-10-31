@@ -14,13 +14,13 @@ export function createAdminPanel({admin,store,config}){
    add(calendar?'Мой Google Calendar':'Подключить Google Calendar','calendarconnect');
    add(settings.users[id]?.muted?'Включить мои напоминания':'Выключить мои напоминания','adminmute');
    add('Проверить доставку мне','admintest');
-   if(admin.isAdmin(id)){text+='\n\nАдминистрирование Onlyplay';add('Пользователи и роли','adminusers:0');add('Назначить менеджера лиду','adminleads:0');add('Настройки напоминаний','adminreminders');add('Встречи и история отправок','adminmeetings');add('Состояние проекта','adminstatus');}
+   if(admin.isAdmin(id)){text+='\n\nАдминистрирование qooob';add('Пользователи и роли','adminusers:0');add('Назначить менеджера лиду','adminleads:0');add('Настройки напоминаний','adminreminders');add('Встречи и история отправок','adminmeetings');add('Состояние проекта','adminstatus');}
    add('Menu','welcome');return {text,rows};
   }
   if(!admin.isAdmin(id)){session.view='settings';return panel(session,id);}
   if(session.view==='settings-users'){
    const ids=[...new Set([...Object.keys(store.state.users||{}),...Object.keys(settings.users),...admin.bootstrap,...store.state.authorizedUsers,...Object.keys(store.state.sessions).map(k=>k.split(':').at(-1))])].filter(x=>/^\d+$/.test(x));
-   const page=Math.max(0,session.adminPage||0);text='Пользователи и роли\n\nВыберите сотрудника. Новому пользователю нужно открыть Onlyplay и нажать /start.';
+   const page=Math.max(0,session.adminPage||0);text='Пользователи и роли\n\nВыберите сотрудника. Новому пользователю нужно открыть qooob и нажать /start.';
    for(const uid of ids.slice(page*8,page*8+8))add(`${name(uid)} · ${settings.users[uid]?.blocked?'заблокирован':ROLES[admin.role(uid)]||'без роли'}`,`adminuser:${uid}`);
    if(page)add('← Назад','adminusers:'+(page-1));if(ids.length>(page+1)*8)add('Далее →','adminusers:'+(page+1));add('Добавить по Telegram ID','adminadd');
   }else if(session.view==='settings-user'){
@@ -44,7 +44,7 @@ export function createAdminPanel({admin,store,config}){
    const data=ledger(),upcoming=(data.upcoming||[]).filter(e=>Date.parse(e.start)>Date.now()).slice(0,8);text='Ближайшие встречи (7 дней)\n\n'+(upcoming.map(e=>`${e.start} · ${String(e.summary).slice(0,90)}`).join('\n')||'Запланированных встреч нет.');
    text+='\n\nПоследние отправки:\n'+(Object.values(data.deliveries||{}).sort((a,b)=>b.at-a.at).slice(0,8).map(d=>`${new Date(d.at).toISOString()} · ${d.recipient} · ${{sent:'отправлено',blocked:'Telegram запретил доставку',retry:'ожидает повтора',uncertain:'доставка не подтверждена',sending:'отправляется'}[d.status]||d.status}`).join('\n')||'Отправок пока нет.');add('Обновить','adminmeetings');
   }else if(session.view==='settings-status'){
-   const data=ledger(),all=leads();text=`Состояние Onlyplay\n\nЛидов: ${all.length}\nСохранены: ${all.filter(l=>l.status==='saved').length}\nОшибка Sheets: ${all.filter(l=>l.sheetsSync?.status==='failed').length}\nНапоминания: ${settings.remindersEnabled?'включены':'выключены'}\nПроверка календаря: ${data.checkedAt?new Date(data.checkedAt).toISOString():'сервис ещё не запущен'}\nСервис: ${data.error?'ошибка '+data.error:!data.checkedAt||Date.now()-data.checkedAt>120000?'нет свежего подтверждения':'работает'}\nGoogle: ${data.checkedAt&&!data.error?'чтение календаря подтверждено':'нужна проверка'}\n\nПоследние изменения:\n${(settings.audit||[]).slice(-5).reverse().map(a=>`${a.at} · ${a.actor} → ${a.target||'напоминания'}`).join('\n')||'Нет изменений'}`;add('Обновить','adminstatus');
+   const data=ledger(),all=leads();text=`Состояние qooob\n\nЛидов: ${all.length}\nСохранены: ${all.filter(l=>l.status==='saved').length}\nОшибка Sheets: ${all.filter(l=>l.sheetsSync?.status==='failed').length}\nНапоминания: ${settings.remindersEnabled?'включены':'выключены'}\nПроверка календаря: ${data.checkedAt?new Date(data.checkedAt).toISOString():'сервис ещё не запущен'}\nСервис: ${data.error?'ошибка '+data.error:!data.checkedAt||Date.now()-data.checkedAt>120000?'нет свежего подтверждения':'работает'}\nGoogle: ${data.checkedAt&&!data.error?'чтение календаря подтверждено':'нужна проверка'}\n\nПоследние изменения:\n${(settings.audit||[]).slice(-5).reverse().map(a=>`${a.at} · ${a.actor} → ${a.target||'напоминания'}`).join('\n')||'Нет изменений'}`;add('Обновить','adminstatus');
   }
   if(config.sharedLeads)text=text.replace('Promoter: базовое добавление лидов, без поиска и встреч.','Promoter: добавление и просмотр общей базы, без бронирования.').replace('Менеджер получит доступ к карточке и напоминания о её встречах.','Менеджер получит права редактирования карточки и напоминания о её встречах.');
   add('Settings','adminhome');return {text,rows};

@@ -6,6 +6,6 @@ export const startLeadPayload=text=>String(text||'').match(/^\/start(?:@\w+)?\s+
 export const validLeadPayload=value=>/^lead_[A-Za-z0-9_-]{43}$/.test(value);
 const escape=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 export function calendarLeadDescription(description,leadId){
- const url='https://t.me/only_leadcapture_bot?start='+leadPayload(leadId);
+ const url='https://t.me/Leadgen_Ass1stant_bot?start='+leadPayload(leadId);
  return escape(description).replaceAll('\n','<br>')+'<br><br><a href="'+url+'">Read more</a>';
 }

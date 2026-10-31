@@ -54,7 +54,7 @@ test('double-tap while lookup is pending never queues another charged call',asyn
  assert.equal(count,1);
 });
 
-test('authorization, read-only, promoter and non-Onlyplay requests never call Apollo',async t=>{
+test('authorization, read-only, promoter and non-qooob requests never call Apollo',async t=>{
  for(const options of [{password:'secret'},{readOnly:true},{role:'promoter'},{profile:'qooob'}]){
   let count=0;const h=await harness(t,async()=>{count++;return reply();},options);
   if(options.readOnly){h.store.equalLeadAccess=false;h.lead.owner='202:202';}

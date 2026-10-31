@@ -36,6 +36,8 @@ test('Materials and Follow-up share durable cache, retain captions/order and pri
  const h=await harness(t,{captureVideo:true});
  await h.send('/materials');await h.action('materialcategory:provider');await h.action('materialsend:introduce-marketplace');
  assert.equal(h.session.materialsDelivery.status,'complete');let videos=h.sent.filter(x=>x.method==='sendVideo');assert.equal(videos.length,2);assert.ok(videos.every(v=>v.raw.includes(Buffer.from('filename='))));
+ const packetBeforeReload=h.sent.filter(x=>['sendVideo','sendPhoto'].includes(x.method)||x.method==='sendMessage'&&!x.reply_markup);
+ assert.deepEqual(packetBeforeReload.slice(-4).map(x=>x.method),['sendVideo','sendVideo','sendMessage','sendPhoto']);
  const captions=videos.map(v=>v.caption);h.reload();
  await h.action('materialsend:introduce-marketplace');videos=h.sent.filter(x=>x.method==='sendVideo');
  assert.deepEqual(videos.slice(2).map(v=>v.caption),captions);assert.ok(videos.slice(2).every(v=>typeof v.video==='string'&&v.video.startsWith('fixture-')));
@@ -48,11 +50,11 @@ test('Materials and Follow-up share durable cache, retain captions/order and pri
  const count=h.sent.filter(x=>x.method==='sendVideo').length;await h.action('followupsend',{chatType:'group'});assert.equal(h.sent.filter(x=>x.method==='sendVideo').length,count);
 });
 test('Materials partial delivery resumes without repeating confirmed first video',async t=>{
- const names=['igames-marketplace.mp4','qooob-economy-providers.mp4'];
+ const names=['igames-marketplace.mp4','qooob-economy-providers.mp4','follow-up-open-distribution-vs-black-box.png'];
  for(const name of names){const file=new URL('../'+name,import.meta.url);assert.ok(!fs.existsSync(file));fs.writeFileSync(file,'fixture');t.after(()=>fs.unlinkSync(file));}
- const h=await harness(t,{failText:'stakeholders',captureVideo:true});
+ const h=await harness(t,{failText:'product update',captureVideo:true});
  await h.send('/materials');await h.action('materialcategory:provider');await h.action('materialsend:introduce-marketplace');
- assert.equal(h.session.materialsDelivery.status,'partial');assert.equal(h.session.materialsDelivery.nextIndex,1);h.reload();
+ assert.equal(h.session.materialsDelivery.status,'partial');assert.equal(h.session.materialsDelivery.nextIndex,2);h.reload();
  await h.action('materialretry');assert.equal(h.session.materialsDelivery.status,'complete');
  const successful=h.sent.filter(x=>x.method==='sendVideo'&&!x.failed);assert.equal(successful.length,2);
 });

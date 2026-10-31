@@ -1,4 +1,4 @@
-# Onlyplay
+# qooob
 
 Telegram lead-capture bot, calendar web application, onboarding, reminders and Slack integration.
 
@@ -19,7 +19,7 @@ Supply credentials through the process environment or private configuration file
 
 | Command | Component |
 | --- | --- |
-| npm start | Onlyplay Telegram bot |
+| npm start | qooob Telegram bot |
 | npm run start:web | Calendar web application |
 | npm run start:onboarding | Telegram onboarding worker |
 | npm run start:reminders | Reminder worker |
@@ -39,6 +39,6 @@ The image contains application code and dependencies only. Inject environment va
 
 The calendar currently listens on loopback; configure a same-host reverse proxy for HTTPS. Container deployment requires adapting and verifying the listen address. Slack requires current and legacy app configuration files, an explicit notification cutover and data paths under /root/event-bot. Google OAuth files and the Telegram onboarding session must be provisioned separately.
 
-Application images and videos are included because they are used at runtime. Shared Qooob names and media are part of the existing Onlyplay application; no separate Qooob service or production data is included.
+Application images and videos are included because they are used at runtime. Shared Qooob names and media are part of the existing qooob application; no separate Qooob service or production data is included.
 
 Tests do not verify live credentials or production integration behavior. An optional browser test is skipped when Playwright is unavailable.

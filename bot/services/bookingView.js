@@ -15,10 +15,10 @@ export function renderMeetLink(event){
 
 export function renderBookingForm({leads,selectedId,csrf,target,canWrite,managers,managerId,prefill={}}){
  const lead=leads.find(item=>item.id===selectedId)||leads[0];
- if(!lead)return '<h2>Новая встреча</h2><p>Нет лидов с заполненными именем и компанией. Добавьте данные в Onlyplay.</p>';
+ if(!lead)return '<h2>Новая встреча</h2><p>Нет лидов с заполненными именем и компанией. Добавьте данные в qooob.</p>';
  const f=lead.fields;
  const zones=[...new Set([target.timeZone,'Europe/Warsaw','UTC'])].map(zone=>`<option value="${esc(zone)}">${esc(zone)}</option>`).join('');
- return `<div class="heading"><div><p class="eyebrow">BOOK MEETING</p><h1>Новая встреча</h1></div><span class="badge">Onlyplay</span></div>
+ return `<div class="heading"><div><p class="eyebrow">BOOK MEETING</p><h1>Новая встреча</h1></div><span class="badge">qooob</span></div>
  <form id="booking-form" action="/book" method="POST">
  <input type="hidden" name="csrf" value="${esc(csrf)}"><input type="hidden" name="leadId" value="${esc(lead.id)}">
  ${managers?`<section class="section"><h2>Календарь менеджера</h2><label for="manager-picker">Ответственный за встречу</label><select id="manager-picker" name="managerId" required><option value="">Выберите менеджера</option>${managers.map(a=>`<option value="${esc(a.userId)}" data-zone="${esc(a.calendar.timeZone)}" data-calendar="${esc(a.email)}" ${a.userId===managerId?'selected':''}>${esc(a.displayName||a.email)} · ${esc(a.email)}</option>`).join('')}</select><p class="hint">Встреча создаётся в основном календаре выбранного менеджера. Проверяется его занятость; напоминание придёт ему в Telegram.</p>${!managers.length?'<p class="error">Доступных личных календарей пока нет. Подключите свой или попросите менеджера подключить Google Calendar в Settings.</p>':''}<p><a href="/calendar">Подключить / проверить мой Google Calendar</a></p></section>`:''}
@@ -35,7 +35,7 @@ export function renderBookingForm({leads,selectedId,csrf,target,canWrite,manager
  <section class="section"><div class="section-label"><span>03</span><h2>Приглашение</h2></div>
  <label for="guests">Email участников</label><input id="guests" name="guests" maxlength="2000" value="${esc(f.email||'')}" placeholder="name@company.com" inputmode="email"><p class="hint">Email лида подставлен из карточки. Другие адреса — через запятую.</p>
  <label class="toggle-row"><span><strong>Отправить приглашения</strong><small id="invite-hint">Выключено — только запись в календаре</small></span><input type="checkbox" name="sendInvites" value="yes" role="switch"></label></section>
- <section class="preview"><p class="eyebrow">ТАК БУДЕТ В КАЛЕНДАРЕ</p><h3 id="meeting-title">${esc('Onlyplay × '+f.company+' — '+f.fullName)}</h3><p id="meeting-description">Встреча Onlyplay с ${esc(f.company.trim())}. Участник: ${esc(f.fullName.trim())}.</p><div class="preview-meta"><span id="preview-when">Дата и время не выбраны</span><span id="preview-location">Место не указано</span></div><div class="calendar-meta" id="calendar-meta" data-calendar="${esc(target.name)}">${esc(target.name)} · 30 минут · Google Calendar за 15 минут</div><p class="hint">Telegram-напоминание получит менеджер, чей календарь выбран для встречи. Интервал и отправка управляются в Settings. Для Inbox напоминаний нет.</p></section>
+ <section class="preview"><p class="eyebrow">ТАК БУДЕТ В КАЛЕНДАРЕ</p><h3 id="meeting-title">${esc('qooob × '+f.company+' — '+f.fullName)}</h3><p id="meeting-description">Встреча qooob с ${esc(f.company.trim())}. Участник: ${esc(f.fullName.trim())}.</p><div class="preview-meta"><span id="preview-when">Дата и время не выбраны</span><span id="preview-location">Место не указано</span></div><div class="calendar-meta" id="calendar-meta" data-calendar="${esc(target.name)}">${esc(target.name)} · 30 минут · Google Calendar за 15 минут</div><p class="hint">Telegram-напоминание получит менеджер, чей календарь выбран для встречи. Интервал и отправка управляются в Settings. Для Inbox напоминаний нет.</p></section>
  ${!canWrite?'<p class="error">Для сохранения нужно подключить личный Google Calendar.</p>':''}
  <div class="actions"><button id="create-meeting" type="submit" ${canWrite?'':'disabled'}>Создать встречу</button><small>В календаре выбранного менеджера</small></div></form>`;
 }

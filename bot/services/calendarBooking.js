@@ -29,8 +29,8 @@ export function buildMeeting(input,lead,target,now=new Date()) {
  if(guests.length>20||guests.some(x=>!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(x)))throw new BookingError('Проверьте адреса гостей (не более 20).');
  if(input.inbox&&guests.length)throw new BookingError('Для Inbox без согласованного времени приглашения не отправляются.');
  if(guests.length&&!input.sendInvites)throw new BookingError('Подтвердите отправку приглашений гостям.');
- const summary=`Onlyplay × ${lead.fields.company.trim()} — ${lead.fields.fullName.trim()}`;
- const description=[`Встреча Onlyplay с ${lead.fields.company.trim()}.`,`Участник: ${lead.fields.fullName.trim()}.`,'Продолжительность: 30 минут.',`Место: ${location}.`,input.inbox?'Время встречи НЕ согласовано. 07:00 — внутренний Inbox, не время встречи.':'Время встречи согласовано.'].join('\n');
+ const summary=`qooob × ${lead.fields.company.trim()} — ${lead.fields.fullName.trim()}`;
+ const description=[`Встреча qooob с ${lead.fields.company.trim()}.`,`Участник: ${lead.fields.fullName.trim()}.`,'Продолжительность: 30 минут.',`Место: ${location}.`,input.inbox?'Время встречи НЕ согласовано. 07:00 — внутренний Inbox, не время встречи.':'Время встречи согласовано.'].join('\n');
  return {
   id:'ea'+createHash('sha256').update(input.submission).digest('hex'),
   summary:(input.inbox?'[Время не согласовано] ':'')+summary,description,

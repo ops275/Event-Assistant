@@ -20,8 +20,8 @@
    const meet=field('createMeet').checked;
    field('location').disabled=meet;field('location').required=!meet;
    text('meet-hint',inbox?'Для Google Meet сначала выберите время':'Ссылка создастся вместе со встречей');
-   text('meeting-title',(inbox?'[Время не согласовано] ':'')+'Onlyplay × '+lead.company.trim()+' — '+lead.name.trim());
-   text('meeting-description',`Встреча Onlyplay с ${lead.company.trim()}. Участник: ${lead.name.trim()}.`);
+   text('meeting-title',(inbox?'[Время не согласовано] ':'')+'qooob × '+lead.company.trim()+' — '+lead.name.trim());
+   text('meeting-description',`Встреча qooob с ${lead.company.trim()}. Участник: ${lead.name.trim()}.`);
    text('preview-when',field('date').value?(field('date').value.split('-').reverse().join('.')+' · '+(inbox?'07:00 · Inbox':field('time').value||'Выберите время')+' · '+field('timeZone').value):'Дата и время не выбраны');
    text('preview-location',meet?'Google Meet · ссылка после создания':field('location').value.trim()||'Место не указано');
    const calendar=document.getElementById('calendar-meta');
@@ -76,7 +76,7 @@
  }
  if(location.pathname!=='/miniapp')return;
  const status=document.getElementById('miniapp-status');
- if(!tg?.initData){status.textContent='Откройте это мини-приложение кнопкой Book Meeting в Telegram-боте Onlyplay.';return;}
+ if(!tg?.initData){status.textContent='Откройте это мини-приложение кнопкой Book Meeting в Telegram-боте qooob.';return;}
  try{
   const ticket=new URLSearchParams(location.search).get('ticket');
   const response=await fetch('/miniapp-auth',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket,initData:tg.initData})});

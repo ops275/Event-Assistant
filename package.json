@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Onlyplay Telegram bot, calendar, onboarding and Slack workers",
+  "description": "qooob Telegram bot, calendar, onboarding and Slack workers",
   "engines": {
     "node": ">=22"
   },

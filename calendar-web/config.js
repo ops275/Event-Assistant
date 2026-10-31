@@ -31,7 +31,7 @@ export const PROFILES = {
         generatedOptions: [
             'Myself',
             'Leadgen team',
-            'Onlyplay',
+            'qooob',
             'Promoters',
             'External Introducers',
             'Others',
@@ -39,8 +39,8 @@ export const PROFILES = {
         cardFooter: '',
     },
     onlyplay: {
-        botName: 'only_leadcapture_bot',
-        generatedOptions: ['Nobody', 'Onlyplay team', 'Reseller', 'Other'],
+        botName: 'Leadgen_Ass1stant_bot',
+        generatedOptions: ['Nobody', 'qooob team', 'Reseller', 'Other'],
         cardFooter: '🦾 vibecoded by qooob',
     },
 };
@@ -53,7 +53,7 @@ export function getConfig(env = process.env) {
     const defaultGenerated = profile.generatedOptions || [
         'Myself',
         'Leadgen team',
-        'Onlyplay',
+        'qooob',
         'Promoters',
         'External Introducers',
         'Others',

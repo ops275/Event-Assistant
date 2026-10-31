@@ -94,9 +94,9 @@
    wasInbox=inbox;
    place.disabled=meet;place.readOnly=inbox;place.required=!meet&&!inbox;
    text('meet-hint',inbox?'Time not clarified uses Offline. Choose a time to enable Google Meet.':meet?'A Google Meet link will be created for this handoff.':'Meet in person at the place below.');
-   text('meeting-title',lead.company.trim()&&lead.name.trim()?(inbox?'[Clarify time] ':'')+'Onlyplay × '+lead.company.trim()+' — '+lead.name.trim():'Enter name and company');
+   text('meeting-title',lead.name.trim()?(inbox?'[Clarify time] ':'')+'qooob × '+[lead.company.trim(),lead.name.trim()].filter(Boolean).join(' — '):'Enter name');
    const attached=document.getElementById('attached-lead');attached.textContent=[lead.company.trim(),lead.name.trim()].filter(Boolean).join(' · ');attached.hidden=!attached.textContent;
-   text('meeting-description',lead.company.trim()&&lead.name.trim()?`Onlyplay meeting with ${lead.company.trim()}. Attendee: ${lead.name.trim()}.`:'Meeting details will appear here.');
+   text('meeting-description',lead.name.trim()?`qooob meeting with ${lead.company.trim()||lead.name.trim()}. Attendee: ${lead.name.trim()}.`:'Meeting details will appear here.');
    text('preview-when',field('date').value?(field('date').value.split('-').reverse().join('.')+' · '+(inbox?'07:00 · Inbox':field('time').value||'Choose time')+' · '+field('timeZone').value):'Date and time not selected');
    text('preview-location',meet?'Google Meet · link after creation':field('location').value.trim()||'Place not entered');
    const calendar=document.getElementById('calendar-meta');
@@ -207,7 +207,7 @@
  }
  if(location.pathname!=='/miniapp')return;
  const status=document.getElementById('miniapp-status');
- if(!tg?.initData){status.textContent='Open this miniapp using Hand off lead in the Onlyplay Telegram bot.';return;}
+ if(!tg?.initData){status.textContent='Open this miniapp using Hand off lead in the qooob Telegram bot.';return;}
  try{
   const ticket=new URLSearchParams(location.search).get('ticket');
   const response=await fetch('/miniapp-auth',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket,initData:tg.initData})});

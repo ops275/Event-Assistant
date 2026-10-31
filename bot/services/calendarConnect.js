@@ -30,8 +30,8 @@ export function createCalendarConnect({accounts,credentials,admin,secret,googleO
    if(data.accessRole!=='owner')throw new Error('Google не подтвердил основной личный календарь.');
    accounts.connect(flow.userId,identity,tokens,{id:data.id,name:data.summary||identity.email,timeZone:data.timeZone||'UTC'});
    res.setHeader('Set-Cookie',`google_oauth_${state.slice(0,12)}=; HttpOnly; Secure; SameSite=Lax; Path=/google; Max-Age=0`);
-   res.writeHead(303,{Location:'https://t.me/only_leadcapture_bot','Cache-Control':'no-store','Referrer-Policy':'no-referrer'});res.end();return true;
-  }catch(error){const own=/^(Google nonce|Подключите|Google-аккаунт|OAuth-сессия|Этот Google|Google не|Вы |Доступ |Вход |Календарь)/.test(error.message||'');reply(res,400,`<h2>Подключение не завершено</h2><p>${esc(own?error.message:'Google не подтвердил подключение. Откройте Settings и начните заново. Если Workspace блокирует приложение, администратору нужно разрешить его.')}</p><a href="https://t.me/only_leadcapture_bot?start=calendar_connected">Вернуться в бот</a>`);return true;}
+   res.writeHead(303,{Location:'https://t.me/Leadgen_Ass1stant_bot','Cache-Control':'no-store','Referrer-Policy':'no-referrer'});res.end();return true;
+  }catch(error){const own=/^(Google nonce|Подключите|Google-аккаунт|OAuth-сессия|Этот Google|Google не|Вы |Доступ |Вход |Календарь)/.test(error.message||'');reply(res,400,`<h2>Подключение не завершено</h2><p>${esc(own?error.message:'Google не подтвердил подключение. Откройте Settings и начните заново. Если Workspace блокирует приложение, администратору нужно разрешить его.')}</p><a href="https://t.me/Leadgen_Ass1stant_bot?start=calendar_connected">Вернуться в бот</a>`);return true;}
  }
  async function authenticatedRoute(req,res,url,identity,reply){
   if(!['/calendar','/calendar/disconnect','/calendar/status'].includes(url.pathname))return false;
@@ -47,7 +47,7 @@ export function createCalendarConnect({accounts,credentials,admin,secret,googleO
    const input=new URLSearchParams(raw);if(input.get('csrf')!==identity.calendarCsrf||input.get('confirm')!=='yes'){reply(res,403,'Подтвердите отключение заново.');return true;}
    const value=accounts.load(identity.userId);let revoked=true;try{if(value)await oauth().revokeToken(value.tokens.refresh_token);}catch{revoked=false;}
    accounts.remove(identity.userId);identity.calendarCsrf=null;
-   reply(res,200,`<h2>Календарь отключён в Onlyplay</h2><p>Новые события от вашего имени больше не создаются. Существующие события в Google Calendar сохранены.</p>${revoked?'':'<p>Google не подтвердил отзыв разрешения. При необходимости удалите доступ Event Assistant в настройках Google-аккаунта.</p>'}<a href="/calendar">К настройкам</a>`);return true;
+   reply(res,200,`<h2>Календарь отключён в qooob</h2><p>Новые события от вашего имени больше не создаются. Существующие события в Google Calendar сохранены.</p>${revoked?'':'<p>Google не подтвердил отзыв разрешения. При необходимости удалите доступ Event Assistant в настройках Google-аккаунта.</p>'}<a href="/calendar">К настройкам</a>`);return true;
   }
   if(req.method!=='GET'){reply(res,405,'Недопустимый метод.');return true;}
   if(account&&url.searchParams.get('disconnect')==='confirm'){reply(res,200,`<h2>Отключить календарь?</h2><p>${esc(account.email)}. Бот перестанет создавать встречи и проверять занятость вашего календаря. Существующие события останутся.</p><form method="POST" action="/calendar/disconnect"><input type="hidden" name="csrf" value="${identity.calendarCsrf}"><input type="hidden" name="confirm" value="yes"><button>Отключить мой календарь</button></form><p><a href="/calendar">Отмена</a></p>`);return true;}

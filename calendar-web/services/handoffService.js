@@ -19,12 +19,12 @@ export function createHandoffService({journal,accounts,settings,clientFor,send,n
   };
   const date=new Date(record.request.start.dateTime),timeZone=record.request.start.timeZone||record.calendar.timeZone||'UTC';
   const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(p=>[p.type,p.value]));
-  const summary=record.request.summary,marker=summary.indexOf('Onlyplay × '),label=marker>=0?summary.slice(marker+'Onlyplay × '.length):summary;
-  const link='https://t.me/only_leadcapture_bot?start='+leadPayload(record.leadId);
+  const summary=record.request.summary,marker=summary.indexOf('qooob × '),label=marker>=0?summary.slice(marker+'qooob × '.length):summary;
+  const link='https://t.me/Leadgen_Ass1stant_bot?start='+leadPayload(record.leadId);
   const meetingLabel=(record.meetingType==='online'?'Online':'Offline')+' meeting';
   let calendarLink=null;try{const u=new URL(record.event?.htmlLink);if(u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&u.href.length<=2048&&(u.hostname==='calendar.google.com'||['google.com','www.google.com'].includes(u.hostname)&&u.pathname.startsWith('/calendar/')))calendarLink=u.href;}catch{}
   const meeting=calendarLink?`<a href="${escape(calendarLink)}">${meetingLabel}</a>`:meetingLabel;
-  return `Lead handed off to ${linkedPerson(record.receiver)} from ${linkedPerson(record.sender)}\n\nOnlyplay × <a href="${link}">${escapedClip(label,1000)}</a>\n\n${meeting} · ${parts.year}-${parts.month}-${parts.day} · ${parts.hour}:${parts.minute}${['partnership','admin'].includes(config.users?.[recipient]?.role)&&record.description?'\n\n'+escapedClip(record.description,1200):''}`;
+  return `Lead handed off to ${linkedPerson(record.receiver)} from ${linkedPerson(record.sender)}\n\nqooob × <a href="${link}">${escapedClip(label,1000)}</a>\n\n${meeting} · ${parts.year}-${parts.month}-${parts.day} · ${parts.hour}:${parts.minute}${['partnership','admin'].includes(config.users?.[recipient]?.role)&&record.description?'\n\n'+escapedClip(record.description,1200):''}`;
  }
  function context({input,lead,identity},legacy,includeLeadLink=true){
   const config=settings(),creatorId=String(lead.actorId||lead.owner?.split(':').at(-1)||'');

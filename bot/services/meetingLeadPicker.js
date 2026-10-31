@@ -7,7 +7,7 @@ const clip=(value,n=90)=>Array.from(String(value||'').replace(/\s+/g,' ')).slice
 export function createMeetingLeadPicker({store,config,bookingButton,beginNewLead,getManagers=()=>[],analyzer,search=smartLeadSearch,searchOptions={}}){
  const enabled=config.profile==='onlyplay';
  if(enabled)config={...config,sharedLeads:true};
- const available=ctx=>searchLeads(Object.values(store.state.leads),{owner:ctx.state.owner,scope:'all',sharedLeads:config.sharedLeads}).filter(l=>l.fields?.fullName?.trim()&&l.fields?.company?.trim());
+ const available=ctx=>searchLeads(Object.values(store.state.leads),{owner:ctx.state.owner,scope:'all',sharedLeads:config.sharedLeads}).filter(l=>l.fields?.fullName?.trim());
  async function update(ctx){
   const state=ctx.state.session.meetingSearch;
   Object.assign(state,{clarification:null},await search(available(ctx),{aiOnly:enabled,...searchOptions,owner:ctx.state.owner,sharedLeads:config.sharedLeads,query:state.query,timeZone:config.timeZone||'UTC'}),{page:0});store.save();
@@ -50,7 +50,7 @@ export function createMeetingLeadPicker({store,config,bookingButton,beginNewLead
    const lead=available(ctx).find(l=>l.id===state.selectedId);
    const button=lead&&bookingButton(ctx,lead.id,'Continue to handoff');if(button)rows.push([button]);
    add('Back to results','meetingback');
-   return {text:lead?clip(lead.fields.fullName,120)+' · '+clip(lead.fields.company,120)+'\n\nOpen the handoff form with this lead.':'This lead is no longer available. Enter a new query.',rows};
+   return {text:lead?[clip(lead.fields.fullName,120),clip(lead.fields.company,120)].filter(Boolean).join(' · ')+'\n\nOpen the handoff form with this lead.':'This lead is no longer available. Enter a new query.',rows};
   }
   const allowed=new Map(available(ctx).map(l=>[l.id,l])),matches=state.matches.filter(m=>allowed.has(m.id));
   let text=state.query?'Search: '+clip(state.query,500):'Search Lead\n\nSelect a lead.';
@@ -60,7 +60,7 @@ export function createMeetingLeadPicker({store,config,bookingButton,beginNewLead
   const pageSize=10,page=Math.min(state.page||0,Math.max(0,Math.ceil(matches.length/pageSize)-1));
   matches.slice(page*pageSize,page*pageSize+pageSize).forEach((match,index)=>{
    const lead=allowed.get(match.id),number=page*pageSize+index+1;
-   const cardText=number+'. '+clip(lead.fields.fullName||'Unnamed',45)+' · '+clip(lead.fields.company||'Company not specified',45)+(lead.fields.jobTitle?'\n'+clip(lead.fields.jobTitle,50):'');
+   const cardText=number+'. '+[clip(lead.fields.fullName,45),clip(lead.fields.company,45)].filter(Boolean).join(' · ')+(lead.fields.jobTitle?'\n'+clip(lead.fields.jobTitle,50):'');
    const label=[lead.fields.fullName,lead.fields.company].filter(Boolean).map(value=>clip(value,42)).join(' / ');
    const button=bookingButton(ctx,lead.id,label)||{text:label,callback_data:'v2:'+session.nonce+':meetingselect:'+lead.id};
    text+='\n\n'+cardText+(matchExplanation(match)?'\n'+matchExplanation(match).slice(0,120):'');rows.push([button]);

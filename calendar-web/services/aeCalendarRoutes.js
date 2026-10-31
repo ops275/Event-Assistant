@@ -1,9 +1,10 @@
+import {visibleManager} from './managerVisibility.js';
 import {managerOptions} from './staffDirectory.js';
 import fs from 'node:fs';import {loadCalendarView} from './aeCalendar.js';import {dateInZone} from './bookingLinks.js';import {BookingError} from './calendarBooking.js';
 const esc=v=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 export function createAeCalendarRoutes({accounts,admin,personal}){
  const limits=new Map();
- const managers=()=>accounts.all().filter(a=>!admin.blocked(a.userId)&&['admin','partnership'].includes(admin.read().users[a.userId]?.role));
+ const managers=()=>accounts.all().filter(visibleManager).filter(a=>!admin.blocked(a.userId)&&['admin','partnership'].includes(admin.read().users[a.userId]?.role));
  function staticRoute(req,res,url){if(req.method!=='GET'||url.pathname!=='/ae-calendar-ui.js')return false;res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(fs.readFileSync(new URL('../ae-calendar-ui.js',import.meta.url)));return true;}
  async function route(req,res,url,identity,reply){
   if(!['/ae-slots','/ae-slots/data'].includes(url.pathname))return false;
