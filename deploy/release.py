@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Root-owned qooob release receiver. No builds or production secrets in artifacts."""
-import contextlib, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tarfile, tempfile, time, urllib.request
+import base64, contextlib, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tarfile, tempfile, time, urllib.request
 STATE=pathlib.Path('/var/lib/qooob-deploy')
 STAGE=pathlib.Path('/srv/qooob-staging')
 PROD=pathlib.Path('/root/event-bot/current')
@@ -234,6 +234,36 @@ def private_hashes():
 def dependency_hash(files):
  return hashlib.sha256(json.dumps({p:h for p,h in sorted(files.items()) if p.startswith('node_modules/')},sort_keys=True).encode()).hexdigest()
 
+def oidc_keys():
+ with urllib.request.urlopen('https://token.actions.githubusercontent.com/.well-known/jwks',timeout=15) as response:return json.load(response)
+
+def github_tree(sha):
+ if not re.fullmatch('[0-9a-f]{40}',sha):raise ValueError('Invalid GitHub commit')
+ req=urllib.request.Request('https://api.github.com/repos/ops275/Event-Assistant/git/commits/'+sha,headers={'Accept':'application/vnd.github+json','User-Agent':'qooob-deploy'})
+ with urllib.request.urlopen(req,timeout=15) as response:return json.load(response)['tree']['sha']
+
+def verify_oidc(token,scope,commit=None,tree=None):
+ # Validate on the server: repository secrets alone do not authorize a feature branch.
+ try:
+  from cryptography.hazmat.primitives.asymmetric import rsa,padding
+  from cryptography.hazmat.primitives import hashes
+  if len(token)>24000 or scope not in ('staging','production'):raise ValueError()
+  head,body,sig=token.split('.')
+  def decode(s):return base64.urlsafe_b64decode(s+'='*((-len(s))%4))
+  header=json.loads(decode(head));claims=json.loads(decode(body))
+  if header.get('alg')!='RS256' or not isinstance(header.get('kid'),str):raise ValueError()
+  jwk=next(k for k in oidc_keys()['keys'] if k['kid']==header['kid'] and k['kty']=='RSA')
+  public=rsa.RSAPublicNumbers(int.from_bytes(decode(jwk['e']),'big'),int.from_bytes(decode(jwk['n']),'big')).public_key()
+  if public.key_size<2048:raise ValueError()
+  public.verify(decode(sig),(head+'.'+body).encode(),padding.PKCS1v15(),hashes.SHA256())
+  branch='staging' if scope=='staging' else 'main';now=time.time()
+  expected={'iss':'https://token.actions.githubusercontent.com','aud':'qooob-deploy','repository':'ops275/Event-Assistant','repository_id':'1440183136','ref':'refs/heads/'+branch,'event_name':'push','workflow_ref':'ops275/Event-Assistant/.github/workflows/check.yml@refs/heads/'+branch}
+  if any(claims.get(k)!=v for k,v in expected.items()):raise ValueError()
+  if claims['exp']<now or claims['nbf']>now+30 or not now-600<=claims['iat']<=now+30:raise ValueError()
+  if commit and claims.get('sha')!=commit:raise ValueError()
+  if tree and github_tree(claims['sha'])!=tree:raise ValueError()
+ except Exception:raise ValueError('GitHub Actions identity/branch/commit verification failed') from None
+
 def main():
  if os.geteuid()!=0:raise ValueError('Root receiver required')
  STATE.mkdir(mode=0o700,parents=True,exist_ok=True)
@@ -244,8 +274,10 @@ def main():
   args=sys.argv[1:]
   if args[:1]==['ssh']:
    scope=args[1];cmd=os.environ.get('SSH_ORIGINAL_COMMAND','').split()
-   if scope=='staging' and len(cmd)==4 and cmd[0]=='stage':stage(*cmd[1:])
-   elif scope=='production' and len(cmd)==2 and cmd[0]=='promote':promote(cmd[1])
+   if scope=='staging' and len(cmd)==5 and cmd[0]=='stage':
+    verify_oidc(cmd[4],scope,cmd[1],cmd[2]);stage(*cmd[1:4])
+   elif scope=='production' and len(cmd)==3 and cmd[0]=='promote':
+    verify_oidc(cmd[2],scope,tree=cmd[1]);promote(cmd[1])
    else:raise ValueError('SSH command not permitted')
   elif args[:1]==['accept'] and len(args)>=3:
    tree=args[1]

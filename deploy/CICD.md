@@ -21,7 +21,7 @@ restrict,command="/usr/bin/python3 /usr/local/lib/qooob-deploy/release.py ssh st
 restrict,command="/usr/bin/python3 /usr/local/lib/qooob-deploy/release.py ssh production" ssh-ed25519 <PRODUCTION_PUBLIC_KEY>
 ```
 
-The staging key permits only `stage <commit> <tree> <archive-sha256>` plus archive bytes on stdin. The production key permits only `promote <tree>`. Neither permits shell, file transfer, port forwarding, acceptance, baseline reset or rollback. Production identity/private configuration remains server-side; do not upload bot tokens, Google/Slack credentials or live data to GitHub.
+The staging key permits only `stage <commit> <tree> <archive-sha256> <GitHub-OIDC-token>` plus archive bytes on stdin. The production key permits only `promote <tree> <GitHub-OIDC-token>`. Neither permits shell, file transfer, port forwarding, acceptance, baseline reset or rollback. Production identity/private configuration remains server-side; do not upload bot tokens, Google/Slack credentials or live data to GitHub.
 
 Before first deployment, download a source-only baseline using the package's tracked runtime paths, compare it with the candidate, inspect PM2 and resolve production current. Initialize the baseline once from a reviewed manifest:
 
@@ -33,12 +33,19 @@ It records current source and dependency hashes; it does not change the applicat
 
 ## GitHub settings (repository Admin required)
 
-Create environments `staging` and `production`, each restricted to its matching branch. In EACH environment set:
+Repository collaborators can configure the repository Actions secrets used by this pipeline:
 
-- Secret `DEPLOY_SSH_KEY`: that environment's restricted private key.
-- Secret `DEPLOY_KNOWN_HOSTS`: the host key line for `81.27.103.54`, verified against the already trusted administrator SSH connection. Never use unverified ssh-keyscan in CI.
+- `STAGING_DEPLOY_SSH_KEY`: staging restricted private key.
+- `PRODUCTION_DEPLOY_SSH_KEY`: production restricted private key.
+- `DEPLOY_KNOWN_HOSTS`: the host key line for `81.27.103.54`, verified over the existing trusted administrator SSH connection. Never use unverified ssh-keyscan in CI.
 
-Protect both branches with `Tests`, strict up-to-date checks and no force push/deletion. Keep `main` as default. Suggested: require PRs with zero mandatory external approvals so a solo maintainer can merge after CI. Enforce protections for administrators after bootstrap. Environment branch restrictions are essential because PR/feature workflows must not access production secrets. No recurring human deployment confirmation is added; main deploys automatically when its staged tree has acceptance.
+Jobs create GitHub environments `staging` and `production`. The root receiver independently validates GitHub's RS256-signed OIDC token (issuer/JWKS over HTTPS), fixed audience, repository ID, push event, workflow path/ref, branch, expiry and commit; it confirms the commit's complete Git tree through the public GitHub API. Staging SSH commands require the staging ref, production requires main. Feature branches cannot authorize deployment merely by using a repository secret. Job-scoped `id-token: write` is set only on the deployment jobs. Python `cryptography` is required on the receiver (46.0.5 already available on the target); CI installs that version for signed-identity tests.
+
+Repository owner/Admin is still required to protect branches and restrict environment branches. These controls are recommended additional protection and are not claimed enabled until verified:
+
+- `main` default; protect both main and staging with `Tests`, strict up-to-date checks, no force pushes/deletion, PRs with zero mandatory external approvals for solo maintenance.
+- Restrict staging environment to staging and production environment to main; keep environment-scoped overrides if desired.
+- Enforce protections for administrators after bootstrap. Main deploys automatically once the staged tree has recorded flow acceptance; no recurring human deployment confirmation is added.
 
 ## Staging acceptance and production
 

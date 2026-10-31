@@ -104,4 +104,24 @@ class ReleaseTests(unittest.TestCase):
     r.promote(m["tree"])
    self.assertEqual((root/"bot/index.js").read_text(),"candidate");self.assertEqual((root/"node_modules/pkg/index.js").read_text(),"candidate-dependency")
    self.assertEqual(r.read(state/"production.json")["commit"],m["commit"])
+ def test_oidc_requires_github_signature_repo_branch_event_commit_and_tree(self):
+  import base64,time
+  from cryptography.hazmat.primitives.asymmetric import rsa,padding
+  from cryptography.hazmat.primitives import hashes
+  from unittest.mock import patch
+  key=rsa.generate_private_key(public_exponent=65537,key_size=2048);pub=key.public_key().public_numbers()
+  def b64(x):return base64.urlsafe_b64encode(x).decode().rstrip("=")
+  jwk={"kid":"test","kty":"RSA","n":b64(pub.n.to_bytes(256,"big")),"e":b64(pub.e.to_bytes(3,"big"))}
+  good={"iss":"https://token.actions.githubusercontent.com","aud":"qooob-deploy","repository":"ops275/Event-Assistant","repository_id":"1440183136","ref":"refs/heads/staging","event_name":"push","sha":"a"*40,"workflow_ref":"ops275/Event-Assistant/.github/workflows/check.yml@refs/heads/staging","exp":int(time.time())+300,"nbf":int(time.time())-5,"iat":int(time.time())-5}
+  def token(claims):
+   msg=b64(json.dumps({"alg":"RS256","kid":"test"}).encode())+"."+b64(json.dumps(claims).encode())
+   return msg+"."+b64(key.sign(msg.encode(),padding.PKCS1v15(),hashes.SHA256()))
+  with patch.object(r,"oidc_keys",return_value={"keys":[jwk]}),patch.object(r,"github_tree",return_value="b"*40):
+   r.verify_oidc(token(good),"staging","a"*40,"b"*40)
+   for change in [{"ref":"refs/heads/feature/hack"},{"repository":"evil/repo"},{"repository_id":"1"},{"event_name":"pull_request"},{"exp":int(time.time())-60},{"aud":"other"},{"sha":"c"*40},{"workflow_ref":"ops275/Event-Assistant/.github/workflows/evil.yml@refs/heads/staging"}]:
+    with self.subTest(change=change),self.assertRaises(ValueError):r.verify_oidc(token({**good,**change}),"staging","a"*40,"b"*40)
+   with self.assertRaises(ValueError):r.verify_oidc(token(good),"production",tree="b"*40)
+   with self.assertRaises(ValueError):r.verify_oidc(token(good),"staging","a"*40,"c"*40)
+   broken=token(good);broken=broken[:-4]+"AAAA"
+   with self.assertRaises(ValueError):r.verify_oidc(broken,"staging","a"*40,"b"*40)
 if __name__=="__main__":unittest.main()

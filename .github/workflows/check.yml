@@ -21,6 +21,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: python3 -m pip install --user cryptography==46.0.5
       - run: python3 -m unittest discover -s deploy -p 'test_*.py'
       - run: node --test scripts/staging.test.mjs
       - run: npm test
@@ -30,6 +31,9 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
     environment:
       name: staging
       url: https://staging.qooob.81.27.103.54.sslip.io
@@ -59,7 +63,7 @@ jobs:
           if-no-files-found: error
       - name: Deploy immutable staging artifact
         env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KEY: ${{ secrets.STAGING_DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         shell: bash
         run: |
@@ -69,9 +73,11 @@ jobs:
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+          oidc=$(curl --fail --silent --show-error -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=qooob-deploy" | python3 -c 'import json,sys; print(json.load(sys.stdin)["value"])')
+          echo "::add-mask::$oidc"
           tree=$(git rev-parse 'HEAD^{tree}')
           sha=$(cat "$RUNNER_TEMP/release.tar.gz.sha256")
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 root@81.27.103.54 "stage $GITHUB_SHA $tree $sha" < "$RUNNER_TEMP/release.tar.gz"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 root@81.27.103.54 "stage $GITHUB_SHA $tree $sha $oidc" < "$RUNNER_TEMP/release.tar.gz"
       - name: Remove deploy key
         if: always()
         run: rm -f ~/.ssh/id_ed25519
@@ -81,6 +87,9 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
     environment:
       name: production
       url: https://qooob.81.27.103.54.sslip.io
@@ -93,7 +102,7 @@ jobs:
           persist-credentials: false
       - name: Promote previously accepted staging artifact
         env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KEY: ${{ secrets.PRODUCTION_DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         shell: bash
         run: |
@@ -103,8 +112,10 @@ jobs:
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+          oidc=$(curl --fail --silent --show-error -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=qooob-deploy" | python3 -c 'import json,sys; print(json.load(sys.stdin)["value"])')
+          echo "::add-mask::$oidc"
           tree=$(git rev-parse 'HEAD^{tree}')
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 root@81.27.103.54 "promote $tree"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 root@81.27.103.54 "promote $tree $oidc"
       - name: Remove deploy key
         if: always()
         run: rm -f ~/.ssh/id_ed25519
