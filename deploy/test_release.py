@@ -118,6 +118,8 @@ class ReleaseTests(unittest.TestCase):
    return msg+"."+b64(key.sign(msg.encode(),padding.PKCS1v15(),hashes.SHA256()))
   with patch.object(r,"oidc_keys",return_value={"keys":[jwk]}),patch.object(r,"github_tree",return_value="b"*40):
    r.verify_oidc(token(good),"staging","a"*40,"b"*40)
+   production={**good,"ref":"refs/heads/main","workflow_ref":"ops275/Event-Assistant/.github/workflows/check.yml@refs/heads/main","sha":"c"*40}
+   r.verify_oidc(token(production),"production",tree="b"*40)
    for change in [{"ref":"refs/heads/feature/hack"},{"repository":"evil/repo"},{"repository_id":"1"},{"event_name":"pull_request"},{"exp":int(time.time())-60},{"aud":"other"},{"sha":"c"*40},{"workflow_ref":"ops275/Event-Assistant/.github/workflows/evil.yml@refs/heads/staging"}]:
     with self.subTest(change=change),self.assertRaises(ValueError):r.verify_oidc(token({**good,**change}),"staging","a"*40,"b"*40)
    with self.assertRaises(ValueError):r.verify_oidc(token(good),"production",tree="b"*40)
