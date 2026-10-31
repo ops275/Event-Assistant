@@ -61,7 +61,7 @@ export function getConfig(env = process.env) {
 
     return {
         profile: profileKey,
-        botName: profile.botName || env.BOT_NAME || '',
+        botName: env.BOT_NAME || profile.botName || '',
         icpOptions: list(env.ICP_TYPE_OPTIONS, ['Operator', 'Platform', 'Provider', 'Aggregator', 'B2B Tech Solution', 'B2B Professional Services']),
         generatedOptions: profileKey==='onlyplay'?profile.generatedOptions:env.GENERATED_BY_OPTIONS ? list(env.GENERATED_BY_OPTIONS) : defaultGenerated,
         cardFooter: env.CARD_FOOTER !== undefined ? env.CARD_FOOTER : (profile.cardFooter || ''),

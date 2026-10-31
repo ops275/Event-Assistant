@@ -1,0 +1,29 @@
+[Unit]
+Description=qooob staging %i
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=qooob-staging
+Group=qooob-staging
+WorkingDirectory=/srv/qooob-staging/current
+EnvironmentFile=/etc/qooob-staging/bot.env
+ExecStart=/usr/bin/node /srv/qooob-staging/current/scripts/start-staging.mjs %i
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=45
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/qooob-staging
+InaccessiblePaths=/etc/onlyplay /var/lib/onlyplay
+MemoryMax=300M
+CPUQuota=40%
+
+[Install]
+WantedBy=multi-user.target
