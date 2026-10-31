@@ -42,3 +42,9 @@ The calendar currently listens on loopback; configure a same-host reverse proxy 
 Application images and videos are included because they are used at runtime. Shared Qooob names and media are part of the existing qooob application; no separate Qooob service or production data is included.
 
 Tests do not verify live credentials or production integration behavior. An optional browser test is skipped when Playwright is unavailable.
+
+## GitHub branches and deployments
+
+Use `feature/<task>` (or `codex/<task>`) branches and open a Pull Request into `staging`. CI checks the application on Linux/Node22; a staging merge automatically deploys the isolated test bot. After the changed flows have been checked and the staged tree accepted, merge `staging` into `main`: production promotes the same archived bytes, backs up changed files and restarts affected workers. Successful production releases receive `prod-<workflow-run-number>` tags.
+
+CI/CD-only and documentation changes do not redeploy the production application. Production does not rebuild dependencies or consume staging credentials. See [deployment setup, acceptance and rollback](deploy/CICD.md) for the exact commands and required GitHub settings. GitHub branch protection still requires the repository owner to enable it when collaborator rights are insufficient.
