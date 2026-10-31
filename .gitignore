@@ -42,3 +42,7 @@ work/
 artifacts/
 .DS_Store
 Thumbs.db
+
+# Python deployment tooling
+__pycache__/
+*.pyc
