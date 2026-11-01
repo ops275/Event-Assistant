@@ -77,5 +77,6 @@ export function getConfig(env = process.env) {
         adminIds: list(env.ADMIN_TELEGRAM_USER_IDS),
         allowedUsers: list(env.ALLOWED_TELEGRAM_USER_IDS),
         accessPassword: env.ACCESS_PASSWORD ? String(env.ACCESS_PASSWORD).trim() : '',
+        accessPasswords: list(env.ACCESS_PASSWORDS),
     };
 }
