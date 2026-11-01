@@ -422,7 +422,8 @@ export function createBot({ token, store, config, analyzer, apollo=createApolloS
         if(config.profile!=='onlyplay'&&effectiveRole(ctx.from.id)==='promoter'&&(config.sharedLeads?/^\/export(?:@\w+)?(?:\s|$)/:/^\/(leads|export|full)(?:@\w+)?(?:\s|$)/).test(ctx.message?.text||''))return ctx.reply('The Promoter role can add leads. Search and meetings are unavailable.');
         if (config.allowedUsers.length && !config.allowedUsers.includes(String(ctx.from.id))&&!admin.managed(ctx.from.id)) return;
 
-        if (config.accessPassword) {
+        const accessPasswords = [config.accessPassword, ...(config.accessPasswords || [])].filter(Boolean);
+        if (accessPasswords.length) {
             const userId = String(ctx.from.id);
             const isAuthorized = admin.managed(userId) || store.isAuthorized(userId) || (config.allowedUsers.length && config.allowedUsers.includes(userId));
             if (!isAuthorized) {
@@ -434,7 +435,7 @@ export function createBot({ token, store, config, analyzer, apollo=createApolloS
                 const text = ctx.message?.text?.trim() || '';
                 const startPayload = text.match(/^\/start\s+(.+)$/)?.[1]?.trim();
                 const candidate = startPayload || text;
-                if (candidate && candidate === config.accessPassword) {
+                if (candidate && accessPasswords.includes(candidate)) {
                     store.authorize(userId);
                     await ctx.deleteMessage().catch(() => {});
                     await ctx.reply('Access granted! Welcome. ✅');
